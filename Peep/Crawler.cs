@@ -96,12 +96,13 @@ namespace Peep
                         if (shouldStop)
                         {
                             cancellationTokenSource.Cancel();
+                            break;
                         }
                     }
 
                     var next = DequeueOrRetry(queue, cancellationTokenSource.Token);
 
-                    if (filter.Contains(next.AbsoluteUri))
+                    if (next == null || filter.Contains(next.AbsoluteUri))
                     {
                         continue;
                     }
