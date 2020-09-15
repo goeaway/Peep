@@ -19,7 +19,7 @@ namespace Peep
 
         public Crawler(CrawlerOptions options)
         {
-            _crawlerOptions = options;
+            _crawlerOptions = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public Task<CrawlResult> Crawl(Uri seed, CancellationToken cancellationToken) 
@@ -31,6 +31,26 @@ namespace Peep
 
         public async Task<CrawlResult> Crawl(IEnumerable<Uri> seeds, CrawlOptions options, CancellationToken cancellationToken)
         {
+            if(seeds == null)
+            {
+                throw new ArgumentNullException(nameof(seeds));
+            }
+
+            if(seeds.Count() == 0)
+            {
+                throw new ArgumentException("at least one seed URI is required");
+            }
+
+            if(options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if(cancellationToken == null)
+            {
+                throw new ArgumentNullException(nameof(cancellationToken));
+            }
+
             var queue = new ConcurrentQueue<Uri>(seeds);
             var filter = new BloomFilter(100000);
             var data = new Dictionary<Uri, IEnumerable<string>>();
@@ -75,12 +95,14 @@ namespace Peep
             CancellationTokenSource cancellationTokenSource,
             Stopwatch stopwatch)
         {
+            var checkConditions = options.StopConditions != null && options.StopConditions.Any();
+
             using (var page = await browser.NewPageAsync())
             {
                 while (!cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     // first thread checks for stop conditions
-                    if(threadId == 0)
+                    if(threadId == 0 && checkConditions)
                     {
                         // check stop conditions
                         // if stop should happen, set cancellation
