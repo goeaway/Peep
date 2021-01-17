@@ -8,8 +8,6 @@ namespace Peep
 {
     public class CrawlerOptions
     {
-        public uint Threads { get; set; }
-            = 1;
         public IBrowserFactory BrowserFactory { get; set; }
             = new BrowserFactory();
         public IDataExtractor DataExtractor { get; set; }

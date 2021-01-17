@@ -1,4 +1,6 @@
-﻿using Peep.Abstractions;
+﻿using HtmlAgilityPack;
+using HtmlAgilityPack.CssSelectors.NetCore;
+using Peep.Abstractions;
 using Peep.Filtering;
 using PuppeteerSharp;
 using System;
@@ -6,8 +8,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 namespace Peep
 {
@@ -61,124 +65,151 @@ namespace Peep
 
             using(var browser = await _crawlerOptions.BrowserFactory.GetBrowser())
             {
-                var innerCancellationTokenSource = new CancellationTokenSource();
                 var userAgent = await browser.GetUserAgentAsync();
 
-                var tasks = Enumerable
-                    .Range(0, (int)_crawlerOptions.Threads)
-                    .Select(i => ThreadWork(
-                            i,
-                            options,
-                            queue,
-                            filter,
-                            data,
-                            browser,
-                            userAgent,
-                            innerCancellationTokenSource,
-                            stopwatch));
-
-                await Task.WhenAll(tasks);
+                await InnerCrawl(
+                    options,
+                    queue,
+                    filter,
+                    data,
+                    browser,
+                    userAgent,
+                    cancellationToken,
+                    stopwatch);
             }
 
             stopwatch.Stop();
             return new CrawlResult { CrawlCount = filter.Count, Data = data, Duration = stopwatch.Elapsed };
         }
 
-        private async Task ThreadWork(
-            int threadId,
+        private async Task InnerCrawl(
             CrawlOptions options, 
             ConcurrentQueue<Uri> queue, 
             BloomFilter filter,
             Dictionary<Uri, IEnumerable<string>> data,
             Browser browser, 
             string userAgent,
-            CancellationTokenSource cancellationTokenSource,
+            CancellationToken cancellationToken,
             Stopwatch stopwatch)
         {
             var checkConditions = options.StopConditions != null && options.StopConditions.Any();
+            var page = (await browser.PagesAsync()).First();
+            var waitStopwatch = new Stopwatch();
 
-            using (var page = await browser.NewPageAsync())
+            while (!cancellationToken.IsCancellationRequested)
             {
-                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                // first thread checks for stop conditions
+                if (checkConditions)
                 {
-                    // first thread checks for stop conditions
-                    if(threadId == 0 && checkConditions)
+                    // check stop conditions
+                    // if stop should happen, set break
+                    var progress = new CrawlProgress
                     {
-                        // check stop conditions
-                        // if stop should happen, set cancellation
-                        var progress = new CrawlProgress
-                        {
-                            CrawlCount = filter.Count,
-                            DataCount = data.Count,
-                            Duration = stopwatch.Elapsed
-                        };
+                        CrawlCount = filter.Count,
+                        DataCount = data.Count,
+                        Duration = stopwatch.Elapsed
+                    };
 
-                        var shouldStop = options.StopConditions.Any(sc => sc.Stop(progress));
+                    var shouldStop = options.StopConditions.Any(sc => sc.Stop(progress));
 
-                        if (shouldStop)
+                    if (shouldStop)
+                    {
+                        break;
+                    }
+                }
+
+                if(cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                // get next URI
+                queue.TryDequeue(out var next);
+                // if no next or filter already contains it, continue
+                if (next == null || filter.Contains(next.AbsoluteUri))
+                {
+                    continue;
+                }
+
+                var response = await page.GoToAsync(next.AbsoluteUri, WaitUntilNavigation.DOMContentLoaded);
+
+                if(response.Ok && !cancellationToken.IsCancellationRequested)
+                {
+                    // if crawl options contain wait options
+                    if(!string.IsNullOrWhiteSpace(options.WaitOptions?.Selector) && options.WaitOptions?.MillisecondsTimeout > 0)
+                    {
+                        waitStopwatch.Start();
+                        // while we haven't timed out or been told to cancel
+                        while (
+                            !(await page.QuerySelectorAllAsync(options.WaitOptions.Selector)).Any() &&
+                            waitStopwatch.ElapsedMilliseconds < options.WaitOptions.MillisecondsTimeout &&
+                            !cancellationToken.IsCancellationRequested)
                         {
-                            cancellationTokenSource.Cancel();
-                            break;
+                            Thread.Sleep(10);
                         }
+                        waitStopwatch.Reset();
                     }
 
-                    var next = DequeueOrRetry(queue, cancellationTokenSource.Token);
-
-                    if (next == null || filter.Contains(next.AbsoluteUri))
-                    {
-                        continue;
-                    }
-
+                    var content = await page.GetContentAsync();
                     filter.Add(next.AbsoluteUri);
 
-                    var response = await page.GoToAsync(next.AbsoluteUri);
-                    // check after long awaits before starting more long tings
-                    if (response.Ok && !cancellationTokenSource.IsCancellationRequested)
-                    {
-                        // parse
-                        var content = await page.GetContentAsync();
-
-                        var primedNext = !next.AbsolutePath.EndsWith("/")
-                            ? next.AbsolutePath + "/"
-                            : next.AbsolutePath;
-
-                        foreach (var link in _crawlerOptions.DataExtractor.ExtractURIs(next, content))
-                        {
-                            if(cancellationTokenSource.IsCancellationRequested)
-                            {
-                                break;
-                            }
-
-                            // must be from the same place as the crawled link,
-                            // must not have been crawled already,
-                            if (link.Host == next.Host
-                                && link.AbsolutePath.Contains(primedNext)
-                                && !filter.Contains(link.AbsoluteUri)
-                                && (options.IgnoreRobots || !await _crawlerOptions.RobotParser.UriForbidden(link, userAgent)))
-                            {
-                                queue.Enqueue(link);
-                            }
-                        }
-
-                        if(!cancellationTokenSource.IsCancellationRequested)
-                        {
-                            var pageData = _crawlerOptions.DataExtractor.ExtractData(content);
-                            data.Add(next, pageData);
-                        }
-                    }
+                    // extract URIs and data from content
+                    await ExtractData(
+                        content,
+                        next,
+                        queue,
+                        filter,
+                        data,
+                        options,
+                        userAgent,
+                        cancellationToken
+                    );
                 }
             }
         }
 
-        private Uri DequeueOrRetry(ConcurrentQueue<Uri> queue, CancellationToken cancellationToken)
+        private async Task ExtractData(
+            string content,
+            Uri currentUri, 
+            ConcurrentQueue<Uri> queue,
+            BloomFilter filter,
+            Dictionary<Uri, IEnumerable<string>> data,
+            CrawlOptions options,
+            string userAgent,
+            CancellationToken cancellationToken)
         {
-            Uri next;
-            while (!queue.TryDequeue(out next) && !cancellationToken.IsCancellationRequested)
+            var primedNext = !currentUri.AbsolutePath.EndsWith("/")
+                        ? currentUri.AbsolutePath + "/"
+                        : currentUri.AbsolutePath;
+
+            foreach (var link in _crawlerOptions.DataExtractor.ExtractURIs(currentUri, content))
             {
-                Thread.Sleep(10);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                // must be from the same place as the crawled link, or matches the optional uri regex,
+                // must not have been crawled already,
+                // must not be blocked by robots.txt
+                if (link.Host == currentUri.Host
+                    && (string.IsNullOrWhiteSpace(options.UriRegex) ? link.AbsolutePath.Contains(primedNext) : Regex.IsMatch(link.AbsoluteUri, options.UriRegex))
+                    && !filter.Contains(link.AbsoluteUri)
+                    && (options.IgnoreRobots || !await _crawlerOptions.RobotParser.UriForbidden(link, userAgent)))
+                {
+                    queue.Enqueue(link);
+                }
             }
 
-            return next;
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                var pageData = _crawlerOptions.DataExtractor.ExtractData(content);
+
+                if(pageData.Any())
+                {
+                    data.Add(currentUri, pageData);
+                }
+            }
         }
     }
 }

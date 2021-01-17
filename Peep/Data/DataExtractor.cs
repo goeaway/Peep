@@ -12,11 +12,15 @@ namespace Peep.Data
         private readonly Regex _uriRegex = new Regex(URI_REGEX_PATTERN);
         private Regex _customRegex;
         private bool _extractData;
+        private string _extractGroupName;
 
-        public void LoadCustomRegexPattern(string regexPattern)
+        public void LoadCustomRegexPattern(string regexPattern) => LoadCustomRegexPattern(regexPattern, "data");
+
+        public void LoadCustomRegexPattern(string regexPattern, string extractGroupName)
         {
             _customRegex = new Regex(regexPattern ?? "");
             _extractData = !string.IsNullOrWhiteSpace(regexPattern);
+            _extractGroupName = extractGroupName;
         }
 
         public IEnumerable<string> ExtractData(string html)
@@ -35,12 +39,9 @@ namespace Peep.Data
 
             foreach (Match match in matches)
             {
-                if (match.Success)
+                if (match.Success && match.Groups.ContainsKey("data"))
                 {
-                    foreach (Group group in match.Groups)
-                    {
-                        yield return group.Value;
-                    }
+                    yield return match.Groups["data"].Value;
                 }
             }
         }
@@ -70,7 +71,18 @@ namespace Peep.Data
                         }
                     }
 
-                    yield return new Uri(value);
+                    Uri uri;
+
+                    try
+                    {
+                        uri = new Uri(value);
+                    }
+                    catch (UriFormatException)
+                    {
+                        continue;
+                    }
+
+                    yield return uri;
                 }
             }
         }
