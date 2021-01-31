@@ -1,5 +1,4 @@
-﻿using Peep.Abstractions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -12,15 +11,17 @@ namespace Peep.Data
         private readonly Regex _uriRegex = new Regex(URI_REGEX_PATTERN);
         private Regex _customRegex;
         private bool _extractData;
-        private string _extractGroupName;
+        private IEnumerable<string> _extractGroupNames;
 
         public void LoadCustomRegexPattern(string regexPattern) => LoadCustomRegexPattern(regexPattern, "data");
 
-        public void LoadCustomRegexPattern(string regexPattern, string extractGroupName)
+        public void LoadCustomRegexPattern(string regexPattern, string extractGroupName) => LoadCustomRegexPattern(regexPattern, new List<string> { extractGroupName });
+
+        public void LoadCustomRegexPattern(string regexPattern, IEnumerable<string> extractGroupNames)
         {
             _customRegex = new Regex(regexPattern ?? "");
             _extractData = !string.IsNullOrWhiteSpace(regexPattern);
-            _extractGroupName = extractGroupName;
+            _extractGroupNames = extractGroupNames;
         }
 
         public IEnumerable<string> ExtractData(string html)
@@ -30,18 +31,20 @@ namespace Peep.Data
                 yield break;
             }
 
-            if (_customRegex == null)
-            {
-                throw new InvalidOperationException("Custom Regex not defined. Custom regex must be loaded before extracting data.");
-            }
-
             var matches = _customRegex.Matches(html);
 
             foreach (Match match in matches)
             {
-                if (match.Success && match.Groups.ContainsKey("data"))
+                foreach(var groupName in _extractGroupNames)
                 {
-                    yield return match.Groups["data"].Value;
+                    if (match.Success && match.Groups.ContainsKey(groupName))
+                    {
+                        var value = match.Groups[groupName].Value;
+                        if(!string.IsNullOrWhiteSpace(value))
+                        {
+                            yield return value;
+                        }
+                    }
                 }
             }
         }
@@ -60,6 +63,11 @@ namespace Peep.Data
                 if (match.Success)
                 {
                     var value = match.Groups[1].Value;
+
+                    if(value.StartsWith("//"))
+                    {
+                        value = "https:" + value;
+                    }
 
                     if (!value.StartsWith("https://") && !value.StartsWith("http://") && !value.StartsWith(source.Host))
                     {

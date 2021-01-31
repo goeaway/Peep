@@ -1,9 +1,4 @@
-﻿using Peep.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Peep.StopConditions
+﻿namespace Peep.StopConditions
 {
     public class MaxDataStopCondition : ICrawlStopCondition
     {

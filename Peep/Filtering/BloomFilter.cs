@@ -1,5 +1,4 @@
-﻿using Peep.Abstractions;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -205,24 +204,6 @@ namespace Peep.Filtering
             hash ^= (hash >> 11);
             hash += (hash << 15);
             return hash;
-        }
-
-        /// <summary>
-        /// The true bits.
-        /// </summary>
-        /// <returns> The <see cref="int"/>. </returns>
-        private int TrueBits()
-        {
-            int output = 0;
-            foreach (bool bit in this._hashBits)
-            {
-                if (bit == true)
-                {
-                    output++;
-                }
-            }
-
-            return output;
         }
 
         /// <summary>

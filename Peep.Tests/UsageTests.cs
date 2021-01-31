@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Peep.Abstractions;
 using Peep.StopConditions;
 using System;
 using System.Collections.Generic;

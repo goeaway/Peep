@@ -1,5 +1,4 @@
-﻿using Peep.Abstractions;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -20,17 +19,25 @@ namespace Peep
 
         public async Task<bool> UriForbidden(Uri uri, string userAgent)
         {
-            if (!_forbiddenPaths.TryGetValue(uri.Host, out IEnumerable<string> forbidden))
+            if (!_forbiddenPaths.TryGetValue(uri.Host, out var forbidden))
             {
-                // make request to get the forbidden urls
-                var result = await _client
-                    .GetStringAsync(
-                        uri.Scheme + "://" + uri.Host + ":" + uri.Port + "/robots.txt");
-
-                if (result != null)
+                try
                 {
-                    forbidden = ParseRobotsFile(result, userAgent);
-                    _forbiddenPaths.TryAdd(uri.Host, forbidden);
+                    // make request to get the forbidden urls
+                    var result = await _client
+                        .GetStringAsync(
+                            uri.Scheme + "://" + uri.Host + ":" + uri.Port + "/robots.txt");
+
+                    if (result != null)
+                    {
+                        forbidden = ParseRobotsFile(result, userAgent);
+                        _forbiddenPaths.TryAdd(uri.Host, forbidden);
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    // ignore it and say it's not forbidden
+                    return false;
                 }
             }
 

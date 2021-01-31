@@ -1,5 +1,4 @@
-﻿using Peep.Abstractions;
-using Peep.StopConditions;
+﻿using Peep.StopConditions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,7 +14,7 @@ namespace Peep
         public string UriRegex { get; set; }
         /// <summary>
         /// Gets or sets a regex pattern string used to find and extract HTML content from a web page.
-        /// If a part of a page's HTML content matches this regex it shoud be saved
+        /// If a part of a page's HTML content matches this regex it should be saved
         /// </summary>
         public string DataRegex { get; set; }
         /// <summary>

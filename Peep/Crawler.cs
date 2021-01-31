@@ -1,6 +1,4 @@
-﻿using HtmlAgilityPack;
-using HtmlAgilityPack.CssSelectors.NetCore;
-using Peep.Abstractions;
+﻿using Peep.BrowserAdapter;
 using Peep.Filtering;
 using PuppeteerSharp;
 using System;
@@ -11,7 +9,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 
 namespace Peep
 {
@@ -28,8 +25,15 @@ namespace Peep
 
         public Task<CrawlResult> Crawl(Uri seed, CancellationToken cancellationToken) 
             => Crawl(seed, new CrawlOptions(), cancellationToken);
-        public Task<CrawlResult> Crawl(Uri seed, CrawlOptions options, CancellationToken cancellationToken) 
-            => Crawl(new List<Uri> { seed }, options, cancellationToken);
+        public Task<CrawlResult> Crawl(Uri seed, CrawlOptions options, CancellationToken cancellationToken)
+        {
+            if(seed == null)
+            {
+                throw new ArgumentNullException(nameof(seed));
+            }
+
+            return Crawl(new List<Uri> { seed }, options, cancellationToken);
+        }
         public Task<CrawlResult> Crawl(IEnumerable<Uri> seeds, CancellationToken cancellationToken) 
             => Crawl(seeds, new CrawlOptions(), cancellationToken);
 
@@ -50,29 +54,24 @@ namespace Peep
                 throw new ArgumentNullException(nameof(options));
             }
 
-            if(cancellationToken == null)
-            {
-                throw new ArgumentNullException(nameof(cancellationToken));
-            }
-
             var queue = new ConcurrentQueue<Uri>(seeds);
-            var filter = new BloomFilter(100000);
+            var filter = new BloomFilter(100_000);
             var data = new Dictionary<Uri, IEnumerable<string>>();
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
             _crawlerOptions.DataExtractor.LoadCustomRegexPattern(options.DataRegex);
 
-            using(var browser = await _crawlerOptions.BrowserFactory.GetBrowser())
+            using(var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter())
             {
-                var userAgent = await browser.GetUserAgentAsync();
+                var userAgent = await browserAdapter.GetUserAgentAsync();
 
                 await InnerCrawl(
                     options,
                     queue,
                     filter,
                     data,
-                    browser,
+                    browserAdapter,
                     userAgent,
                     cancellationToken,
                     stopwatch);
@@ -87,13 +86,12 @@ namespace Peep
             ConcurrentQueue<Uri> queue, 
             BloomFilter filter,
             Dictionary<Uri, IEnumerable<string>> data,
-            Browser browser, 
+            IBrowserAdapter browserAdapter, 
             string userAgent,
             CancellationToken cancellationToken,
             Stopwatch stopwatch)
         {
             var checkConditions = options.StopConditions != null && options.StopConditions.Any();
-            var page = (await browser.PagesAsync()).First();
             var waitStopwatch = new Stopwatch();
 
             while (!cancellationToken.IsCancellationRequested)
@@ -131,9 +129,9 @@ namespace Peep
                     continue;
                 }
 
-                var response = await page.GoToAsync(next.AbsoluteUri, WaitUntilNavigation.DOMContentLoaded);
+                var response = await browserAdapter.NavigateToAsync(next);
 
-                if(response.Ok && !cancellationToken.IsCancellationRequested)
+                if(response && !cancellationToken.IsCancellationRequested)
                 {
                     // if crawl options contain wait options
                     if(!string.IsNullOrWhiteSpace(options.WaitOptions?.Selector) && options.WaitOptions?.MillisecondsTimeout > 0)
@@ -141,7 +139,7 @@ namespace Peep
                         waitStopwatch.Start();
                         // while we haven't timed out or been told to cancel
                         while (
-                            !(await page.QuerySelectorAllAsync(options.WaitOptions.Selector)).Any() &&
+                            !(await browserAdapter.QuerySelectorFoundAsync(options.WaitOptions.Selector)) &&
                             waitStopwatch.ElapsedMilliseconds < options.WaitOptions.MillisecondsTimeout &&
                             !cancellationToken.IsCancellationRequested)
                         {
@@ -150,7 +148,7 @@ namespace Peep
                         waitStopwatch.Reset();
                     }
 
-                    var content = await page.GetContentAsync();
+                    var content = await browserAdapter.GetContentAsync();
                     filter.Add(next.AbsoluteUri);
 
                     // extract URIs and data from content
