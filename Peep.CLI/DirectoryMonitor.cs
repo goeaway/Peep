@@ -8,8 +8,12 @@ namespace Peep.CLI
 {
     public class DirectoryMonitor
     {
-        public CrawlJob WaitForCrawlJob(Directory directory)
+        public CrawlJob WaitForCrawlJob(string directory)
         {
+            // loop while nothing in dir
+            // once found, extract json from file and delete it
+            // return job
+
             return null;
         }
     }

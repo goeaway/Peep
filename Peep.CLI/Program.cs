@@ -23,9 +23,11 @@ namespace Peep.CLI
                 .WithParsedAsync(async o =>
                 {
                     var crawler = new Crawler();
-
                     // setup monitor
-                    await crawler.Crawl(null, _cancellationTokenSource.Token);
+                    
+                    // create while loop, check for a job from dir monitor
+                    // put the result in a json file in the results directory
+                    var result = await crawler.Crawl(null, _cancellationTokenSource.Token);
 
                 })
                 .ConfigureAwait(false)
