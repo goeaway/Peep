@@ -37,7 +37,7 @@ namespace Peep
             }
 
             var queue = new ConcurrentQueue<Uri>(job.Seeds);
-            var filter = new BloomFilter(100_000);
+            var filter = new BloomFilter(1_000_000);
             var data = new Dictionary<Uri, IEnumerable<string>>();
             var stopwatch = new Stopwatch();
             stopwatch.Start();

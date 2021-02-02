@@ -24,10 +24,11 @@ namespace Peep.CLI
                 {
                     var crawler = new Crawler();
                     // setup monitor
-                    
+                    var monitor = new DirectoryMonitor();
                     // create while loop, check for a job from dir monitor
-                    // put the result in a json file in the results directory
+
                     var result = await crawler.Crawl(null, _cancellationTokenSource.Token);
+                    // put the result in a json file in the results directory
 
                 })
                 .ConfigureAwait(false)
