@@ -23,7 +23,7 @@ namespace Peep.BrowserAdapter
             _browser = Puppeteer
                 .LaunchAsync(new LaunchOptions
                 {
-                    Headless = false,
+                    Headless = true,
                     Args = new[]
                     {
                         "--no-sandbox",

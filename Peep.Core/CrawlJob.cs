@@ -1,12 +1,16 @@
-﻿using Peep.StopConditions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Peep
+namespace Peep.Core
 {
-    public class CrawlOptions
+    public class CrawlJob
     {
+        /// <summary>
+        /// Gets or sets a collection of seed uris a crawler should begin a crawl from
+        /// </summary>
+        public IEnumerable<Uri> Seeds { get; set; }
+            = new List<Uri>();
         /// <summary>
         /// Gets or sets a regex pattern string used to determine if a found url should be queued for crawling. 
         /// If a url matches this regex it should be added.
@@ -30,11 +34,7 @@ namespace Peep
         /// The default stop conditions are a max crawl count of 10,000 and max crawl time of 20 minutes. 
         /// If any stop condition is met the crawl will stop
         /// </summary>
-        public IEnumerable<ICrawlStopCondition> StopConditions { get; set; }
-            = new List<ICrawlStopCondition>
-            {
-                new MaxCrawlStopCondition(10000),
-                new MaxDurationStopCondition(TimeSpan.FromMinutes(20))
-            };
+        public IEnumerable<SerialisableStopCondition> StopConditions { get; set; }
+            = new List<SerialisableStopCondition>();
     }
 }

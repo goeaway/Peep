@@ -1,4 +1,5 @@
 ﻿using Peep.BrowserAdapter;
+using Peep.Core;
 using Peep.Filtering;
 using PuppeteerSharp;
 using System;
@@ -23,51 +24,32 @@ namespace Peep
             _crawlerOptions = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public Task<CrawlResult> Crawl(Uri seed, CancellationToken cancellationToken) 
-            => Crawl(seed, new CrawlOptions(), cancellationToken);
-        public Task<CrawlResult> Crawl(Uri seed, CrawlOptions options, CancellationToken cancellationToken)
+        public async Task<CrawlResult> Crawl(CrawlJob job, CancellationToken cancellationToken)
         {
-            if(seed == null)
+            if(job == null)
             {
-                throw new ArgumentNullException(nameof(seed));
+                throw new ArgumentNullException(nameof(job));
             }
 
-            return Crawl(new List<Uri> { seed }, options, cancellationToken);
-        }
-        public Task<CrawlResult> Crawl(IEnumerable<Uri> seeds, CancellationToken cancellationToken) 
-            => Crawl(seeds, new CrawlOptions(), cancellationToken);
-
-        public async Task<CrawlResult> Crawl(IEnumerable<Uri> seeds, CrawlOptions options, CancellationToken cancellationToken)
-        {
-            if(seeds == null)
+            if(job.Seeds?.Count() == 0)
             {
-                throw new ArgumentNullException(nameof(seeds));
+                throw new InvalidOperationException("at least one seed URI is required");
             }
 
-            if(seeds.Count() == 0)
-            {
-                throw new ArgumentException("at least one seed URI is required");
-            }
-
-            if(options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            var queue = new ConcurrentQueue<Uri>(seeds);
+            var queue = new ConcurrentQueue<Uri>(job.Seeds);
             var filter = new BloomFilter(100_000);
             var data = new Dictionary<Uri, IEnumerable<string>>();
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            _crawlerOptions.DataExtractor.LoadCustomRegexPattern(options.DataRegex);
+            _crawlerOptions.DataExtractor.LoadCustomRegexPattern(job.DataRegex);
 
             using(var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter())
             {
                 var userAgent = await browserAdapter.GetUserAgentAsync();
 
                 await InnerCrawl(
-                    options,
+                    job,
                     queue,
                     filter,
                     data,
@@ -82,7 +64,7 @@ namespace Peep
         }
 
         private async Task InnerCrawl(
-            CrawlOptions options, 
+            CrawlJob job, 
             ConcurrentQueue<Uri> queue, 
             BloomFilter filter,
             Dictionary<Uri, IEnumerable<string>> data,
@@ -91,7 +73,7 @@ namespace Peep
             CancellationToken cancellationToken,
             Stopwatch stopwatch)
         {
-            var checkConditions = options.StopConditions != null && options.StopConditions.Any();
+            var checkConditions = job.StopConditions != null && job.StopConditions.Any();
             var waitStopwatch = new Stopwatch();
 
             while (!cancellationToken.IsCancellationRequested)
@@ -108,7 +90,7 @@ namespace Peep
                         Duration = stopwatch.Elapsed
                     };
 
-                    var shouldStop = options.StopConditions.Any(sc => sc.Stop(progress));
+                    var shouldStop = job.StopConditions.Any(sc => sc.Stop(progress));
 
                     if (shouldStop)
                     {
@@ -134,13 +116,13 @@ namespace Peep
                 if(response && !cancellationToken.IsCancellationRequested)
                 {
                     // if crawl options contain wait options
-                    if(!string.IsNullOrWhiteSpace(options.WaitOptions?.Selector) && options.WaitOptions?.MillisecondsTimeout > 0)
+                    if(!string.IsNullOrWhiteSpace(job.WaitOptions?.Selector) && job.WaitOptions?.MillisecondsTimeout > 0)
                     {
                         waitStopwatch.Start();
                         // while we haven't timed out or been told to cancel
                         while (
-                            !(await browserAdapter.QuerySelectorFoundAsync(options.WaitOptions.Selector)) &&
-                            waitStopwatch.ElapsedMilliseconds < options.WaitOptions.MillisecondsTimeout &&
+                            !(await browserAdapter.QuerySelectorFoundAsync(job.WaitOptions.Selector)) &&
+                            waitStopwatch.ElapsedMilliseconds < job.WaitOptions.MillisecondsTimeout &&
                             !cancellationToken.IsCancellationRequested)
                         {
                             Thread.Sleep(10);
@@ -158,7 +140,7 @@ namespace Peep
                         queue,
                         filter,
                         data,
-                        options,
+                        job,
                         userAgent,
                         cancellationToken
                     );
@@ -172,7 +154,7 @@ namespace Peep
             ConcurrentQueue<Uri> queue,
             BloomFilter filter,
             Dictionary<Uri, IEnumerable<string>> data,
-            CrawlOptions options,
+            CrawlJob job,
             string userAgent,
             CancellationToken cancellationToken)
         {
@@ -191,9 +173,9 @@ namespace Peep
                 // must not have been crawled already,
                 // must not be blocked by robots.txt
                 if (link.Host == currentUri.Host
-                    && (string.IsNullOrWhiteSpace(options.UriRegex) ? link.AbsolutePath.Contains(primedNext) : Regex.IsMatch(link.AbsoluteUri, options.UriRegex))
+                    && (string.IsNullOrWhiteSpace(job.UriRegex) ? link.AbsolutePath.Contains(primedNext) : Regex.IsMatch(link.AbsoluteUri, job.UriRegex))
                     && !filter.Contains(link.AbsoluteUri)
-                    && (options.IgnoreRobots || !await _crawlerOptions.RobotParser.UriForbidden(link, userAgent)))
+                    && (job.IgnoreRobots || !await _crawlerOptions.RobotParser.UriForbidden(link, userAgent)))
                 {
                     queue.Enqueue(link);
                 }

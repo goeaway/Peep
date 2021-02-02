@@ -1,5 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Peep.StopConditions;
+using Peep.Core;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -17,8 +17,12 @@ namespace Peep.Tests
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var options = new CrawlOptions
+            var job = new CrawlJob
             {
+                Seeds = new List<Uri>
+                {
+                    new Uri("https://www.youtube.com/"), 
+                },
                 UriRegex = "https://www.youtube.com/watch.*?",
                 DataRegex = "<h1.*?=\"title.*?<yt-formatted-string.*?ytd-video-primary-info-renderer\">(?<data>.*?)</yt-formatted-string>",
                 WaitOptions = new WaitOptions
@@ -26,17 +30,23 @@ namespace Peep.Tests
                     MillisecondsTimeout = 3000,
                     Selector = "h1.title .ytd-video-primary-info-renderer"
                 },
-                StopConditions = new List<ICrawlStopCondition>
+                StopConditions = new List<SerialisableStopCondition>
                 {
-                    new MaxDurationStopCondition(TimeSpan.FromMinutes(10)),
-                    //new MaxCrawlStopCondition(10),
-                    new MaxDataStopCondition(10)
+                    new SerialisableStopCondition
+                    {
+                        Value = TimeSpan.FromMinutes(10).TotalSeconds,
+                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                    },
+                    new SerialisableStopCondition
+                    {
+                        Value = 10,
+                        Type = SerialisableStopConditionType.MaxDataCount
+                    }
                 }
             };
 
             var result = await crawler.Crawl(
-                new Uri("https://www.youtube.com/"), 
-                options, 
+                job, 
                 cancellationTokenSource.Token);
 
             Assert.AreEqual(10, result.Data.Count);
