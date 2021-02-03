@@ -24,7 +24,11 @@ namespace Peep
             _crawlerOptions = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public async Task<CrawlResult> Crawl(CrawlJob job, CancellationToken cancellationToken)
+        public Task<CrawlResult> Crawl(CrawlJob job, CancellationToken cancellationToken) 
+            => Crawl(job, TimeSpan.MinValue, null, cancellationToken);
+
+        public async Task<CrawlResult> Crawl(CrawlJob job, TimeSpan progressUpdateTime,
+            Action<CrawlProgress> progressUpdate, CancellationToken cancellationToken)
         {
             if(job == null)
             {
@@ -56,7 +60,9 @@ namespace Peep
                     browserAdapter,
                     userAgent,
                     cancellationToken,
-                    stopwatch);
+                    stopwatch,
+                    progressUpdateTime,
+                    progressUpdate);
             }
 
             stopwatch.Stop();
@@ -71,39 +77,39 @@ namespace Peep
             IBrowserAdapter browserAdapter, 
             string userAgent,
             CancellationToken cancellationToken,
-            Stopwatch stopwatch)
+            Stopwatch stopwatch,
+            TimeSpan progressUpdateTime,
+            Action<CrawlProgress> progressUpdate)
         {
-            var checkConditions = job.StopConditions != null && job.StopConditions.Any();
             var waitStopwatch = new Stopwatch();
+            var progressStopwatch = new Stopwatch();
+            progressStopwatch.Start();
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                // first thread checks for stop conditions
-                if (checkConditions)
+                // check stop conditions
+                // if stop should happen, set break
+                var progress = new CrawlProgress
                 {
-                    // check stop conditions
-                    // if stop should happen, set break
-                    var progress = new CrawlProgress
-                    {
-                        CrawlCount = filter.Count,
-                        DataCount = data.Count,
-                        Duration = stopwatch.Elapsed
-                    };
+                    CrawlCount = filter.Count,
+                    DataCount = data.Count,
+                    Duration = stopwatch.Elapsed
+                };
 
-                    var shouldStop = job.StopConditions.Any(sc => sc.Stop(progress));
-
-                    if (shouldStop)
-                    {
-                        break;
-                    }
-                }
-
-                if(cancellationToken.IsCancellationRequested)
+                if(cancellationToken.IsCancellationRequested || (
+                    job.StopConditions != null && 
+                    job.StopConditions.Any(sc => sc.Stop(progress))))
                 {
                     break;
                 }
 
-                // get next URI
+                if(progressUpdate != null && progressStopwatch.ElapsedMilliseconds >= progressUpdateTime.TotalMilliseconds)
+                {
+                    progressUpdate.Invoke(progress);
+                    progressStopwatch.Restart();
+                }
+
+                // get next URI 
                 queue.TryDequeue(out var next);
                 // if no next or filter already contains it, continue
                 if (next == null || filter.Contains(next.AbsoluteUri))

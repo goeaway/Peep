@@ -10,5 +10,9 @@ namespace Peep
     public interface ICrawler
     {
         Task<CrawlResult> Crawl(CrawlJob job, CancellationToken cancellationToken);
+        Task<CrawlResult> Crawl(CrawlJob job,
+            TimeSpan progressUpdateTime,
+            Action<CrawlProgress> progressUpdate,
+            CancellationToken cancellationToken);
     }
 }
