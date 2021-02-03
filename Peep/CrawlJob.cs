@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Peep.PageActions;
+using Peep.StopConditions;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Peep.Core
+namespace Peep
 {
     public class CrawlJob
     {
@@ -26,15 +28,16 @@ namespace Peep.Core
         /// </summary>
         public bool IgnoreRobots { get; set; }
         /// <summary>
-        /// Gets or sets options for waiting during a crawl
-        /// </summary>
-        public WaitOptions WaitOptions { get; set; }
-        /// <summary>
         /// Gets or sets a collection of stop conditions used by the crawler to determine when a crawl should be stopped.
         /// The default stop conditions are a max crawl count of 10,000 and max crawl time of 20 minutes. 
         /// If any stop condition is met the crawl will stop
         /// </summary>
         public IEnumerable<SerialisableStopCondition> StopConditions { get; set; }
             = new List<SerialisableStopCondition>();
+        /// <summary>
+        /// Gets or sets a collection of actions to be performed on each page
+        /// </summary>
+        public IEnumerable<SerialisablePageAction> PageActions { get; set; }
+            = new List<SerialisablePageAction>();
     }
 }

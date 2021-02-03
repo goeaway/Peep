@@ -9,7 +9,9 @@ namespace Peep.BrowserAdapter
     {
         Task<string> GetUserAgentAsync();
         Task<string> GetContentAsync();
-        Task<bool> QuerySelectorFoundAsync(string selector);
         Task<bool> NavigateToAsync(Uri uri);
+        Task WaitForSelector(string selector, TimeSpan timeout);
+        Task Click(string selector);
+        Task ScrollY(int scrollAmount);
     }
 }

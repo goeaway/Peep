@@ -1,8 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Peep.BrowserAdapter;
-using Peep.Core;
 using Peep.Factories;
+using Peep.PageActions;
+using Peep.StopConditions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -490,64 +491,73 @@ namespace Peep.Tests
             mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Once());
         }
 
+        //[TestMethod]
+        //public async Task Times_Out_Waiting_For_Selector_But_Continues()
+        //{
+        //    var URI = new Uri("http://localhost/");
+        //    const string EXTRACTED_DATA = "<a href='/page'></a>";
+        //    const string USER_AGENT = "user-agent";
+        //    var CANCELLATION_TOKEN = new CancellationTokenSource().Token;
+        //    var JOB = new CrawlJob
+        //    {
+        //        Seeds = new List<Uri>
+        //        {
+        //            URI
+        //        },
+        //        PageActions = new List<SerialisablePageAction>
+        //        {
+        //            new SerialisablePageAction
+        //            {
+        //                Value = "test",
+        //                Type = SerialisablePageActionType.Wait
+        //            }
+        //        },
+        //        StopConditions = new List<SerialisableStopCondition>
+        //        {
+        //            new SerialisableStopCondition
+        //            {
+        //                Value = 1,
+        //                Type = SerialisableStopConditionType.MaxDurationSeconds
+        //            }
+        //        }
+        //    };
+
+        //    var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
+        //    var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+        //    var mockRobotParser = new Mock<IRobotParser>();
+
+        //    mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
+        //        .ReturnsAsync(mockBrowserAdapter.Object);
+
+        //    mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+        //    mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
+        //    mockBrowserAdapter.SetupSequence(mock => mock.QuerySelectorFoundAsync(It.IsAny<string>()))
+        //        .ReturnsAsync(false)
+        //        .ReturnsAsync(true);
+
+        //    mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+
+        //    mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
+        //        .ReturnsAsync(false);
+
+        //    var crawlerOptions = new CrawlerOptions
+        //    {
+        //        RobotParser = mockRobotParser.Object,
+        //        BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+        //    };
+
+        //    var crawler = new Crawler(crawlerOptions);
+
+        //    var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
+
+        //    mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Exactly(2));
+        //    mockBrowserAdapter.Verify(mock => mock.QuerySelectorFoundAsync(It.IsAny<string>()), Times.Exactly(2));
+        //}
+
         [TestMethod]
-        public async Task Times_Out_Waiting_For_Selector_But_Continues()
+        public async Task Crawl_Performs_Page_Actions_Before_Getting_Content()
         {
-            var URI = new Uri("http://localhost/");
-            const string EXTRACTED_DATA = "<a href='/page'></a>";
-            const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN = new CancellationTokenSource().Token;
-            var JOB = new CrawlJob
-            {
-                WaitOptions = new WaitOptions
-                {
-                    MillisecondsTimeout = 2000,
-                    Selector = "test"
-                },
-                Seeds = new List<Uri>
-                {
-                    URI
-                },
-                StopConditions = new List<SerialisableStopCondition>
-                {
-                    new SerialisableStopCondition
-                    {
-                        Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
-                    }
-                }
-            };
-
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
-            var mockBrowserAdapter = new Mock<IBrowserAdapter>();
-            var mockRobotParser = new Mock<IRobotParser>();
-
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
-
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
-            mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.SetupSequence(mock => mock.QuerySelectorFoundAsync(It.IsAny<string>()))
-                .ReturnsAsync(false)
-                .ReturnsAsync(true);
-
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
-
-            mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
-                .ReturnsAsync(false);
-
-            var crawlerOptions = new CrawlerOptions
-            {
-                RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
-            };
-
-            var crawler = new Crawler(crawlerOptions);
-
-            var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
-
-            mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Exactly(2));
-            mockBrowserAdapter.Verify(mock => mock.QuerySelectorFoundAsync(It.IsAny<string>()), Times.Exactly(2));
+            Assert.Fail();
         }
 
         [TestMethod]

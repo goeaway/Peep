@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Peep.Core
+namespace Peep.StopConditions
 {
     public enum SerialisableStopConditionType
     {

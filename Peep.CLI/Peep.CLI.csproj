@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Peep.Core\Peep.Core.csproj" />
     <ProjectReference Include="..\Peep\Peep.csproj" />
   </ItemGroup>
 

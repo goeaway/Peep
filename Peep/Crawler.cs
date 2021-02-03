@@ -1,5 +1,4 @@
 ﻿using Peep.BrowserAdapter;
-using Peep.Core;
 using Peep.Filtering;
 using PuppeteerSharp;
 using System;
@@ -121,20 +120,28 @@ namespace Peep
 
                 if(response && !cancellationToken.IsCancellationRequested)
                 {
-                    // if crawl options contain wait options
-                    if(!string.IsNullOrWhiteSpace(job.WaitOptions?.Selector) && job.WaitOptions?.MillisecondsTimeout > 0)
+                    // perform any page actions to get the page in a certain state before extracting content
+                    if(job.PageActions != null && job.PageActions.Any())
                     {
-                        waitStopwatch.Start();
-                        // while we haven't timed out or been told to cancel
-                        while (
-                            !(await browserAdapter.QuerySelectorFoundAsync(job.WaitOptions.Selector)) &&
-                            waitStopwatch.ElapsedMilliseconds < job.WaitOptions.MillisecondsTimeout &&
-                            !cancellationToken.IsCancellationRequested)
+                        foreach(var paction in job.PageActions)
                         {
-                            Thread.Sleep(10);
+                            await paction.Perform(browserAdapter);
                         }
-                        waitStopwatch.Reset();
                     }
+                    // if crawl options contain wait options
+                    //if(!string.IsNullOrWhiteSpace(job.WaitOptions?.Selector) && job.WaitOptions?.MillisecondsTimeout > 0)
+                    //{
+                    //    waitStopwatch.Start();
+                    //    // while we haven't timed out or been told to cancel
+                    //    while (
+                    //        !(await browserAdapter.QuerySelectorFoundAsync(job.WaitOptions.Selector)) &&
+                    //        waitStopwatch.ElapsedMilliseconds < job.WaitOptions.MillisecondsTimeout &&
+                    //        !cancellationToken.IsCancellationRequested)
+                    //    {
+                    //        Thread.Sleep(10);
+                    //    }
+                    //    waitStopwatch.Reset();
+                    //}
 
                     var content = await browserAdapter.GetContentAsync();
                     filter.Add(next.AbsoluteUri);

@@ -56,14 +56,27 @@ namespace Peep.BrowserAdapter
             return response.Ok;
         }
 
-        public async Task<bool> QuerySelectorFoundAsync(string selector)
+        public async Task WaitForSelector(string selector, TimeSpan timeout)
+        {
+            await _page.WaitForSelectorAsync(selector, new WaitForSelectorOptions 
+            { 
+                Timeout = (int)timeout.TotalMilliseconds 
+            });
+        }
+
+        public async Task Click(string selector)
         {
             if(selector == null)
             {
                 throw new ArgumentNullException(nameof(selector));
             }
 
-            return (await _page.QuerySelectorAllAsync(selector)).Any();
+            await _page.ClickAsync(selector);
+        }
+
+        public async Task ScrollY(int scrollAmount)
+        {
+            await _page.EvaluateExpressionAsync($"window.scrollBy(0, {scrollAmount})");
         }
     }
 }

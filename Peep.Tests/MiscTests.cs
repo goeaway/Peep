@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
-using Peep.Core;
+using Peep.PageActions;
+using Peep.StopConditions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,10 +29,13 @@ namespace Peep.Tests
                 },
                 UriRegex = "https://www.youtube.com/watch.*?",
                 DataRegex = "<h1.*?=\"title.*?<yt-formatted-string.*?ytd-video-primary-info-renderer\">(?<data>.*?)</yt-formatted-string>",
-                WaitOptions = new WaitOptions
+                PageActions = new List<SerialisablePageAction>
                 {
-                    MillisecondsTimeout = 3000,
-                    Selector = "h1.title .ytd-video-primary-info-renderer"
+                    new SerialisablePageAction
+                    {
+                        Value = "h1.title .ytd-video-primary-info-renderer",
+                        Type = SerialisablePageActionType.Wait
+                    }
                 },
                 StopConditions = new List<SerialisableStopCondition>
                 {
@@ -68,10 +72,13 @@ namespace Peep.Tests
                 },
                 UriRegex = "https://www.youtube.com/watch.*?",
                 DataRegex = "<h1.*?=\"title.*?<yt-formatted-string.*?ytd-video-primary-info-renderer\">(?<data>.*?)</yt-formatted-string>",
-                WaitOptions = new WaitOptions
+                PageActions = new List<SerialisablePageAction>
                 {
-                    MillisecondsTimeout = 3000,
-                    Selector = "h1.title .ytd-video-primary-info-renderer"
+                    new SerialisablePageAction
+                    {
+                        Value = "h1.title .ytd-video-primary-info-renderer",
+                        Type = SerialisablePageActionType.Wait
+                    }
                 },
                 StopConditions = new List<SerialisableStopCondition>
                 {
