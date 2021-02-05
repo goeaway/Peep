@@ -1,7 +1,9 @@
 ﻿using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,11 +16,18 @@ namespace Peep.BrowserAdapter
 
         public PuppeteerSharpBrowserAdapter()
         {
-            new BrowserFetcher()
-                .DownloadAsync(BrowserFetcher.DefaultRevision)
-                .ConfigureAwait(false)
-                .GetAwaiter()
-                .GetResult();
+            // we can't just use the downloadable browser on linux (in docker)
+            // if the OS is linux, puppeteer sharp will pick up the browser location
+            // set in the environment variable PUPPETEER_EXECUTABLE_PATH 
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                new BrowserFetcher()
+                    .DownloadAsync(BrowserFetcher.DefaultRevision)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+            }
 
             _browser = Puppeteer
                 .LaunchAsync(new LaunchOptions
@@ -26,8 +35,7 @@ namespace Peep.BrowserAdapter
                     Headless = true,
                     Args = new[]
                     {
-                        "--no-sandbox",
-                        "--disable-setuid-sandbox"
+                        "--no-sandbox"
                     }
                 })
                 .ConfigureAwait(false)
@@ -40,6 +48,26 @@ namespace Peep.BrowserAdapter
                 .GetAwaiter()
                 .GetResult()
                 .First();
+        }
+
+        private void Bash(string cmd)
+        {
+            var escapedArgs = cmd.Replace("\"", "\\\"");
+
+            var process = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = $"-c \"{escapedArgs}\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                }
+            };
+            process.Start();
+            string result = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
         }
 
         public void Dispose() => _browser.Dispose();

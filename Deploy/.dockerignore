@@ -1,0 +1,8 @@
+bin/
+obj/
+Deploy/
+Peep.Tests/
+TestResults/
+.gitattributes
+.gitignore
+Peep.sln

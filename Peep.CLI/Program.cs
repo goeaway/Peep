@@ -42,9 +42,9 @@ namespace Peep.CLI
                         logger.Information("Initialising...");
                         var crawler = new Crawler();
                         // setup manager
-                        var manager = new JobManager(o.ProcessDirectory);
+                        var manager = new JobManager(o.ProcessDirectory, logger);
 
-                        logger.Information("Waiting for jobs in {ProcessDirectory}", o.ProcessDirectory);
+                        logger.Information("Waiting for jobs in {JobDirectory}", manager.JobDirectory);
                         var notifiedWaiting = true;
 
                         // create while loop, check for a job from dir monitor
@@ -57,12 +57,15 @@ namespace Peep.CLI
 
                                 try
                                 {
-                                    var result = await crawler.Crawl(job, 
-                                        TimeSpan.FromMinutes(1),
-                                        progress => 
+                                    var updateInterval = o.ProgressUpdateIntervalSeconds < -1 ? 0 : o.ProgressUpdateIntervalSeconds;
+                                    var updateAction = o.ProgressUpdateIntervalSeconds < 1 ? default(Action<CrawlProgress>) : progress =>
                                             logger.Information(
-                                                "Total Crawled: {CrawlCount}\tData Collected: {DataCount}", 
-                                                progress.CrawlCount, progress.DataCount),
+                                                "Total Crawled: {CrawlCount}\tData Collected: {DataCount}",
+                                                progress.CrawlCount, progress.DataCount);
+
+                                    var result = await crawler.Crawl(job, 
+                                        TimeSpan.FromSeconds(updateInterval),
+                                        updateAction,
                                         _cancellationTokenSource.Token);
                                     // put the result in a json file in the results directory
                                     manager.SaveResults(result, jobFileInfo);
@@ -86,7 +89,7 @@ namespace Peep.CLI
                                     notifiedWaiting = true;
                                 }
 
-                                await Task.Delay(15000);
+                                await Task.Delay(10000);
                             }
                         }
                     }

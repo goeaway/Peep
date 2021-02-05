@@ -1,4 +1,5 @@
-﻿using Peep.PageActions;
+﻿using Newtonsoft.Json;
+using Peep.PageActions;
 using Peep.StopConditions;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,19 @@ namespace Peep
 {
     public class CrawlJob
     {
+        public CrawlJob()
+        {
+
+        }
+        [JsonConstructor]
+        public CrawlJob(
+            IEnumerable<SerialisableStopCondition> stopConditions, 
+            IEnumerable<SerialisablePageAction> pageActions)
+        {
+            StopConditions = stopConditions;
+            PageActions = pageActions;
+        }
+
         /// <summary>
         /// Gets or sets a collection of seed uris a crawler should begin a crawl from
         /// </summary>
@@ -32,12 +46,12 @@ namespace Peep
         /// The default stop conditions are a max crawl count of 10,000 and max crawl time of 20 minutes. 
         /// If any stop condition is met the crawl will stop
         /// </summary>
-        public IEnumerable<SerialisableStopCondition> StopConditions { get; set; }
-            = new List<SerialisableStopCondition>();
+        public IEnumerable<ICrawlStopCondition> StopConditions { get; set; }
+            = new List<ICrawlStopCondition>();
         /// <summary>
         /// Gets or sets a collection of actions to be performed on each page
         /// </summary>
-        public IEnumerable<SerialisablePageAction> PageActions { get; set; }
-            = new List<SerialisablePageAction>();
+        public IEnumerable<IPageAction> PageActions { get; set; }
+            = new List<IPageAction>();
     }
 }

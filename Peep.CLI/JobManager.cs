@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,8 +12,13 @@ namespace Peep.CLI
     public class JobManager
     {
         private readonly DirectoryInfo _directoryInfo;
+        private readonly ILogger _logger;
 
-        public JobManager(string processDirectory)
+        public string JobDirectory { get; }
+        public string ResultsDirectory { get; }
+        public string ErrorDirectory { get; }
+
+        public JobManager(string processDirectory, ILogger logger)
         {
             if(processDirectory == null)
             {
@@ -23,10 +29,34 @@ namespace Peep.CLI
 
             if(!processDirectoryInfo.Exists)
             {
-                throw new DirectoryNotFoundException($"Directory {processDirectory} not found");
+                _logger.Information("Creating app directory {ProcessDirectory}", processDirectory);
+                Directory.CreateDirectory(processDirectory);
             }
 
             _directoryInfo = new DirectoryInfo(processDirectory);
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+
+            JobDirectory = Path.Combine(_directoryInfo.FullName, Consts.Paths.Jobs.BucketDirectory);
+            if(!Directory.Exists(JobDirectory))
+            {
+                _logger.Information("Creating job directory {JobDirectory}", JobDirectory);
+                Directory.CreateDirectory(JobDirectory);
+            }
+
+            ResultsDirectory = Path.Combine(_directoryInfo.FullName, Consts.Paths.Jobs.ResultsDirectory);
+            if (!Directory.Exists(ResultsDirectory))
+            {
+                _logger.Information("Creating results directory {ResultsDirectory}", ResultsDirectory);
+                Directory.CreateDirectory(ResultsDirectory);
+            }
+
+            ErrorDirectory = Path.Combine(_directoryInfo.FullName, Consts.Paths.Jobs.ErrorDirectory);
+            if (!Directory.Exists(ErrorDirectory))
+            {
+                _logger.Information("Creating error directory {ErrorDirectory}", ErrorDirectory);
+                Directory.CreateDirectory(ErrorDirectory);
+            }
         }
 
         public bool TryGetCrawlJob(out CrawlJob job, out FileInfo jobFileInfo)
@@ -34,15 +64,7 @@ namespace Peep.CLI
             job = null;
             jobFileInfo = null;
 
-            // once found, extract json from file and delete it
-            var jobDirectory = Path.Combine(_directoryInfo.FullName, Consts.Paths.Jobs.BucketDirectory);
-
-            if(!Directory.Exists(jobDirectory))
-            {
-                Directory.CreateDirectory(jobDirectory);
-            }
-
-            var files = new DirectoryInfo(jobDirectory).GetFiles("*.json", SearchOption.TopDirectoryOnly);
+            var files = new DirectoryInfo(JobDirectory).GetFiles("*.json", SearchOption.TopDirectoryOnly);
 
             if(files.Any())
             {
@@ -67,14 +89,7 @@ namespace Peep.CLI
                 throw new ArgumentNullException(nameof(jobFileInfo));
             }
 
-            var resultsDirectory = Path.Combine(_directoryInfo.FullName, Consts.Paths.Jobs.ResultsDirectory);
-
-            if(!Directory.Exists(resultsDirectory))
-            {
-                Directory.CreateDirectory(resultsDirectory);
-            }
-
-            File.WriteAllText(Path.Combine(resultsDirectory, jobFileInfo.Name), JsonConvert.SerializeObject(jobResult, Formatting.Indented));
+            File.WriteAllText(Path.Combine(ResultsDirectory, jobFileInfo.Name), JsonConvert.SerializeObject(jobResult, Formatting.Indented));
         }
 
         public void SaveError(CrawlJob job, FileInfo jobFileInfo)
@@ -89,14 +104,7 @@ namespace Peep.CLI
                 throw new ArgumentNullException(nameof(jobFileInfo));
             }
 
-            var errorDirectory = Path.Combine(_directoryInfo.FullName, Consts.Paths.Jobs.ErrorDirectory);
-
-            if (!Directory.Exists(errorDirectory))
-            {
-                Directory.CreateDirectory(errorDirectory);
-            }
-
-            File.WriteAllText(Path.Combine(errorDirectory, jobFileInfo.Name), JsonConvert.SerializeObject(job, Formatting.Indented));
+            File.WriteAllText(Path.Combine(ErrorDirectory, jobFileInfo.Name), JsonConvert.SerializeObject(job, Formatting.Indented));
         }
     }
 }
