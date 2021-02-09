@@ -14,5 +14,9 @@ namespace Peep
             TimeSpan progressUpdateTime,
             Action<CrawlProgress> progressUpdate,
             CancellationToken cancellationToken);
+        Task<CrawlResult> Crawl(CrawlJob job,
+            TimeSpan progressUpdateTime,
+            Func<CrawlProgress, Task> asyncProgressUpdate,
+            CancellationToken cancellationToken);
     }
 }

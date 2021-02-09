@@ -49,8 +49,14 @@ namespace Peep
         public Task<CrawlResult> Crawl(CrawlJob job, CancellationToken cancellationToken) 
             => Crawl(job, TimeSpan.MinValue, null, cancellationToken);
 
+        public Task<CrawlResult> Crawl(CrawlJob job,
+            TimeSpan progressUpdateTime,
+            Action<CrawlProgress> progressUpdate,
+            CancellationToken cancellationToken) 
+            => Crawl(job, progressUpdateTime, p => Task.Run(() => progressUpdate(p)), cancellationToken);
+
         public async Task<CrawlResult> Crawl(CrawlJob job, TimeSpan progressUpdateTime,
-            Action<CrawlProgress> progressUpdate, CancellationToken cancellationToken)
+            Func<CrawlProgress, Task> progressUpdate, CancellationToken cancellationToken)
         {
             if(job == null)
             {
@@ -98,7 +104,7 @@ namespace Peep
             CancellationToken cancellationToken,
             Stopwatch stopwatch,
             TimeSpan progressUpdateTime,
-            Action<CrawlProgress> progressUpdate)
+            Func<CrawlProgress, Task> progressUpdate)
         {
             var waitStopwatch = new Stopwatch();
             var progressStopwatch = new Stopwatch();
@@ -124,7 +130,7 @@ namespace Peep
 
                 if(progressUpdate != null && progressStopwatch.ElapsedMilliseconds >= progressUpdateTime.TotalMilliseconds)
                 {
-                    progressUpdate.Invoke(progress);
+                    await progressUpdate.Invoke(progress);
                     progressStopwatch.Restart();
                 }
 

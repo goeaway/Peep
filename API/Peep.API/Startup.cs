@@ -20,6 +20,9 @@ using Newtonsoft.Json;
 using Peep.API.Models.DTOs;
 using Microsoft.AspNetCore.Diagnostics;
 using Peep.API.Application.Exceptions;
+using Peep.API.Application;
+using Peep.API.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Peep.API
 {
@@ -43,6 +46,18 @@ namespace Peep.API
 
             services.AddMediatR(Assembly.GetAssembly(typeof(QueueCrawlRequest)));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
+
+            services.AddHostedService<HostedCrawlerService>();
+
+            services.AddDbContext<PeepApiContext>(
+                options => options.UseInMemoryDatabase("PeepApiDatabase"));
+
+            services.AddCrawler();
+            services.AddLogger();
+            //services.AddStackExchangeRedisCache(options =>
+            //{
+            //    options.
+            //});
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

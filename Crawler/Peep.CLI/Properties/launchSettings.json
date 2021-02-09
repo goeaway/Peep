@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Peep.CLI": {
-      "commandName": "Project",
-      "commandLineArgs": "-d C:\\Users\\Joe\\Documents\\Peep -i 2"
-    }
-  }
-}

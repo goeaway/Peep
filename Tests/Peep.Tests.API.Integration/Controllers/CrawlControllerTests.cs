@@ -21,7 +21,14 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             var (server, client) = Setup.CreateServer();
 
-            var response = await client.PostAsync("/crawl", null);
+            var job = new CrawlJob
+            {
+
+            };
+
+            var requestContent = new StringContent(JsonConvert.SerializeObject(job), Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync("/crawl", requestContent);
 
             Assert.AreEqual(200, (int)response.StatusCode);
 
@@ -72,6 +79,30 @@ namespace Peep.Tests.API.Integration.Controllers
 
         [TestMethod]
         public async Task Returns_200_With_Crawl_Result_If_Crawl_Complete()
+        {
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public async Task Returns_200_When_Crawl_Cancelled_Before_Being_Run()
+        {
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public async Task Returns_200_When_Crawl_Cancelled_During_Run()
+        {
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public async Task Returns_200_When_Crawl_Cancelled_After_Run()
+        {
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public async Task Returns_200_When_Crawl_Never_Queued()
         {
             Assert.Fail();
         }

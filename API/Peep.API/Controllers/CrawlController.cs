@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Peep.API.Application.Commands.CancelQueuedCrawl;
 using Peep.API.Application.Commands.QueueCrawl;
 using Peep.API.Application.Queries.GetCrawl;
 using Peep.API.Models.DTOs;
@@ -33,6 +34,12 @@ namespace Peep.API.Controllers
         public Task<QueueCrawlResponseDTO> Queue(CrawlJob job)
         {
             return _mediator.Send(new QueueCrawlRequest(job));
+        }
+
+        [HttpPost("cancel/{crawlId}")]
+        public Task<CancelCrawlResponseDTO> Cancel(string crawlId)
+        {
+            return _mediator.Send(new CancelCrawlRequest(crawlId));
         }
     }
 }

@@ -7,12 +7,16 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="9.5.0" />
     <PackageReference Include="MediatR" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
     <PackageReference Include="Serilog" Version="2.10.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Peep.Core\Peep.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler\Peep\Peep.csproj" />
     <ProjectReference Include="..\Peep.API.Models\Peep.API.Models.csproj" />
+    <ProjectReference Include="..\Peep.API.Persistence\Peep.API.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
