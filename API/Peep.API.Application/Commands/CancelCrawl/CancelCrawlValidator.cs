@@ -9,7 +9,7 @@ namespace Peep.API.Application.Commands.CancelQueuedCrawl
     {
         public CancelCrawlValidator()
         {
-
+            RuleFor(x => x.CrawlId).NotEmpty().WithMessage("Crawl id required");
         }
     }
 }

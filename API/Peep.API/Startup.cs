@@ -23,6 +23,7 @@ using Peep.API.Application.Exceptions;
 using Peep.API.Application;
 using Peep.API.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Peep.API.Application.Providers;
 
 namespace Peep.API
 {
@@ -54,6 +55,7 @@ namespace Peep.API
 
             services.AddCrawler();
             services.AddLogger();
+            services.AddTransient<INowProvider, NowProvider>();
             //services.AddStackExchangeRedisCache(options =>
             //{
             //    options.
@@ -102,8 +104,14 @@ namespace Peep.API
                 if(exception is RequestValidationFailedException)
                 {
                     ctx.Response.StatusCode = 400;
-                    errorResponse.Message = "Validation failed";
+                    errorResponse.Message = "Validation error";
                     errorResponse.Errors = (exception as RequestValidationFailedException).Failures.Select(f => f.ErrorMessage);
+                }
+                else if (exception is RequestFailedException)
+                {
+                    var rfException = exception as RequestFailedException;
+                    ctx.Response.StatusCode = (int)rfException.StatusCode;
+                    errorResponse.Message = rfException.Message;
                 }
 
                 await ctx.Response.WriteAsync(JsonConvert.SerializeObject(errorResponse));

@@ -79,20 +79,40 @@ namespace Peep
             {
                 var userAgent = await browserAdapter.GetUserAgentAsync();
 
-                await InnerCrawl(
-                    job,
-                    queue,
-                    data,
-                    browserAdapter,
-                    userAgent,
-                    cancellationToken,
-                    stopwatch,
-                    progressUpdateTime,
-                    progressUpdate);
+                try
+                {
+                    await InnerCrawl(
+                        job,
+                        queue,
+                        data,
+                        browserAdapter,
+                        userAgent,
+                        cancellationToken,
+                        stopwatch,
+                        progressUpdateTime,
+                        progressUpdate);
+                }
+                catch (Exception e)
+                {
+                    throw new CrawlerRunException(
+                        "Error occurred during crawl",
+                        new CrawlResult 
+                        { 
+                            CrawlCount = _crawlerOptions.Filter.Count, 
+                            Data = data, 
+                            Duration = stopwatch.Elapsed 
+                        },
+                        e);
+                }
             }
 
             stopwatch.Stop();
-            return new CrawlResult { CrawlCount = _crawlerOptions.Filter.Count, Data = data, Duration = stopwatch.Elapsed };
+            return new CrawlResult 
+            { 
+                CrawlCount = _crawlerOptions.Filter.Count, 
+                Data = data, 
+                Duration = stopwatch.Elapsed 
+            };
         }
 
         private async Task InnerCrawl(

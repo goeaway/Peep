@@ -11,7 +11,19 @@ namespace Peep.Tests.API.Unit.Commands.CancelCrawl
     public class HandlerTests
     {
         [TestMethod]
-        public async Task Does_Something()
+        public async Task Throws_If_Crawl_Not_Queued_Or_Running()
+        {
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public async Task Dequeues_Crawl_If_Queued()
+        {
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public async Task Cancels_Crawl_If_Running()
         {
             Assert.Fail();
         }

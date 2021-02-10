@@ -17,7 +17,7 @@ namespace Peep.Tests.API.Integration.Controllers
     public class CrawlControllerTests
     {
         [TestMethod]
-        public async Task Returns_200_For_Successful_Queue_With_Crawl_Id()
+        public async Task Queue_Returns_200_For_Successful_Queue_With_Crawl_Id()
         {
             var (server, client) = Setup.CreateServer();
 
@@ -38,7 +38,7 @@ namespace Peep.Tests.API.Integration.Controllers
         }
 
         [TestMethod]
-        public async Task Returns_400_For_Request_Validation_Failure()
+        public async Task Queue_Returns_400_For_Request_Validation_Failure()
         {
             var (server, client) = Setup.CreateServer();
 
@@ -56,55 +56,67 @@ namespace Peep.Tests.API.Integration.Controllers
             var content = JsonConvert.DeserializeObject<ErrorResponseDTO>(await response.Content.ReadAsStringAsync());
 
             Assert.AreEqual("Validation error", content.Message);
-            Assert.AreEqual("At least one seed Uri is required", content.Errors.First());
+            Assert.AreEqual("At least 1 seed uri is required", content.Errors.First());
         }
 
         [TestMethod]
-        public async Task Returns_404_For_CrawlId_Not_Found()
+        public async Task Get_Returns_404_For_CrawlId_Not_Found()
+        {
+            const string CRAWL_ID = "crawl-id";
+
+            var (server, client) = Setup.CreateServer();
+
+            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+
+            Assert.AreEqual(404, (int)response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task Get_Returns_200_With_Crawl_Still_In_Queue_Info()
         {
             Assert.Fail();
         }
 
         [TestMethod]
-        public async Task Returns_200_With_Crawl_Still_In_Queue_Info()
+        public async Task Get_Returns_200_With_Crawl_Progress_If_Crawl_Running()
         {
             Assert.Fail();
         }
 
         [TestMethod]
-        public async Task Returns_200_With_Crawl_Progress_If_Crawl_Running()
+        public async Task Get_Returns_200_With_Crawl_Result_If_Crawl_Complete()
         {
             Assert.Fail();
         }
 
         [TestMethod]
-        public async Task Returns_200_With_Crawl_Result_If_Crawl_Complete()
+        public async Task Cancel_Returns_200_When_Crawl_Cancelled_Before_Being_Run()
         {
             Assert.Fail();
         }
 
         [TestMethod]
-        public async Task Returns_200_When_Crawl_Cancelled_Before_Being_Run()
+        public async Task Cancel_Returns_200_When_Crawl_Cancelled_During_Run()
         {
             Assert.Fail();
         }
 
         [TestMethod]
-        public async Task Returns_200_When_Crawl_Cancelled_During_Run()
+        public async Task Cancel_Returns_200_When_Crawl_Cancelled_After_Run()
         {
             Assert.Fail();
         }
 
         [TestMethod]
-        public async Task Returns_200_When_Crawl_Cancelled_After_Run()
+        public async Task Cancel_Returns_404_When_Crawl_Never_Queued()
         {
-            Assert.Fail();
-        }
+            const string CRAWL_ID = "crawl-id";
 
-        [TestMethod]
-        public async Task Returns_200_When_Crawl_Never_Queued()
-        {
-            Assert.Fail();
+            var (server, client) = Setup.CreateServer();
+
+            var response = await client.GetAsync($"/crawl/cancel/{CRAWL_ID}");
+
+            Assert.AreEqual(404, (int)response.StatusCode);
         }
     }
 }

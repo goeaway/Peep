@@ -7,5 +7,9 @@ namespace Peep.API.Application.Queries.GetCrawl
 {
     public class GetCrawlValidator : AbstractValidator<GetCrawlRequest>
     {
+        public GetCrawlValidator()
+        {
+            RuleFor(x => x.CrawlId).NotEmpty().WithMessage("Crawl id required");
+        }
     }
 }

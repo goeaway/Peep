@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Peep.API.Application.Providers;
 using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
 using Peep.API.Persistence;
@@ -19,10 +20,12 @@ namespace Peep.API.Application.Commands.QueueCrawl
     public class QueueCrawlHandler : IRequestHandler<QueueCrawlRequest, QueueCrawlResponseDTO>
     {
         private readonly PeepApiContext _context;
+        private readonly INowProvider _nowProvider;
 
-        public QueueCrawlHandler(PeepApiContext context)
+        public QueueCrawlHandler(PeepApiContext context, INowProvider nowProvider)
         {
             _context = context;
+            _nowProvider = nowProvider;
         }
 
         public async Task<QueueCrawlResponseDTO> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
@@ -40,7 +43,7 @@ namespace Peep.API.Application.Commands.QueueCrawl
             var queuedJob = new QueuedJob
             {
                 JobJson = JsonConvert.SerializeObject(request.Job),
-                DateQueued = DateTime.Now,
+                DateQueued = _nowProvider.Now,
                 Id = Guid.NewGuid().ToString()
             };
 
