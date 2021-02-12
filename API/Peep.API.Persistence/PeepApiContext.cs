@@ -14,12 +14,14 @@ namespace Peep.API.Persistence
         }
 
         public DbSet<QueuedJob> QueuedJobs { get; set; }
+        public DbSet<RunningJob> RunningJobs { get; set; }
         public DbSet<CompletedJob> CompletedJobs { get; set; }
         public DbSet<ErroredJob> ErroredJobs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<QueuedJob>().ToTable("QueuedJobs");
+            modelBuilder.Entity<RunningJob>().ToTable("RunningJobs");
             modelBuilder.Entity<CompletedJob>().ToTable("CompletedJobs");
             modelBuilder.Entity<ErroredJob>().ToTable("ErroredJobs");
         }

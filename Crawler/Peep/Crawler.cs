@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Peep
@@ -46,17 +47,80 @@ namespace Peep
             }
         }
 
-        public Task<CrawlResult> Crawl(CrawlJob job, CancellationToken cancellationToken) 
-            => Crawl(job, TimeSpan.MinValue, null, cancellationToken);
+        public ChannelReader<CrawlResult> Crawl(CrawlJob job, TimeSpan channelUpdateTimeSpan, CancellationToken cancellationToken)
+        {
+            if(job == null)
+            {
+                throw new ArgumentNullException(nameof(job));
+            }
 
-        public Task<CrawlResult> Crawl(CrawlJob job,
-            TimeSpan progressUpdateTime,
-            Action<CrawlProgress> progressUpdate,
-            CancellationToken cancellationToken) 
-            => Crawl(job, progressUpdateTime, p => Task.Run(() => progressUpdate(p)), cancellationToken);
+            if (job.Seeds?.Count() == 0)
+            {
+                throw new InvalidOperationException("at least one seed URI is required");
+            }
 
-        public async Task<CrawlResult> Crawl(CrawlJob job, TimeSpan progressUpdateTime,
-            Func<CrawlProgress, Task> progressUpdate, CancellationToken cancellationToken)
+            var channel = Channel.CreateUnbounded<CrawlResult>(new UnboundedChannelOptions 
+            { 
+                SingleReader = true,
+                SingleWriter = true
+            });
+
+            // have a task in here that starts the crawl, and then when we get to the end of that set the channel as complete
+            // fire and forget task?
+            Task.Run(async () =>
+            {
+                var queue = new ConcurrentQueue<Uri>(job.Seeds);
+                var data = new Dictionary<Uri, IEnumerable<string>>();
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                _crawlerOptions.DataExtractor.LoadCustomRegexPattern(job.DataRegex);
+
+                using (var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter())
+                {
+                    var userAgent = await browserAdapter.GetUserAgentAsync();
+
+                    try
+                    {
+                        await InnerCrawl(
+                            job,
+                            queue,
+                            data,
+                            browserAdapter,
+                            userAgent,
+                            cancellationToken,
+                            stopwatch, 
+                            channel.Writer, 
+                            channelUpdateTimeSpan);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new CrawlerRunException(
+                            "Error occurred during crawl",
+                            new CrawlResult
+                            {
+                                CrawlCount = _crawlerOptions.Filter.Count,
+                                Data = data,
+                                Duration = stopwatch.Elapsed
+                            },
+                            e);
+                    }
+                }
+
+                stopwatch.Stop();
+                channel.Writer.TryWrite(new CrawlResult
+                {
+                    CrawlCount = _crawlerOptions.Filter.Count,
+                    Data = data,
+                    Duration = stopwatch.Elapsed
+                });
+                channel.Writer.Complete();
+            });
+
+            return channel.Reader;
+        }
+
+        public async Task<CrawlResult> Crawl(CrawlJob job, CancellationToken cancellationToken) 
         {
             if(job == null)
             {
@@ -88,9 +152,7 @@ namespace Peep
                         browserAdapter,
                         userAgent,
                         cancellationToken,
-                        stopwatch,
-                        progressUpdateTime,
-                        progressUpdate);
+                        stopwatch);
                 }
                 catch (Exception e)
                 {
@@ -123,8 +185,8 @@ namespace Peep
             string userAgent,
             CancellationToken cancellationToken,
             Stopwatch stopwatch,
-            TimeSpan progressUpdateTime,
-            Func<CrawlProgress, Task> progressUpdate)
+            ChannelWriter<CrawlResult> channelWriter = null,
+            TimeSpan channelWriterUpdateTime = default)
         {
             var waitStopwatch = new Stopwatch();
             var progressStopwatch = new Stopwatch();
@@ -134,10 +196,10 @@ namespace Peep
             {
                 // check stop conditions
                 // if stop should happen, set break
-                var progress = new CrawlProgress
+                var progress = new CrawlResult
                 {
                     CrawlCount = _crawlerOptions.Filter.Count,
-                    DataCount = data.Count,
+                    Data = data,
                     Duration = stopwatch.Elapsed
                 };
 
@@ -148,9 +210,9 @@ namespace Peep
                     break;
                 }
 
-                if(progressUpdate != null && progressStopwatch.ElapsedMilliseconds >= progressUpdateTime.TotalMilliseconds)
+                if(channelWriter != null && progressStopwatch.ElapsedMilliseconds >= channelWriterUpdateTime.TotalMilliseconds)
                 {
-                    await progressUpdate.Invoke(progress);
+                    channelWriter.TryWrite(progress);
                     progressStopwatch.Restart();
                 }
 

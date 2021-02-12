@@ -6,6 +6,6 @@ namespace Peep.Core.StopConditions
 {
     public interface ICrawlStopCondition
     {
-        bool Stop(CrawlProgress progress);
+        bool Stop(CrawlResult progress);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Peep.API.Models.DTOs;
+using Peep.API.Models.Entities;
 using Peep.Core;
 using Peep.Tests.Core;
 using System;
@@ -19,11 +20,14 @@ namespace Peep.Tests.API.Integration.Controllers
         [TestMethod]
         public async Task Queue_Returns_200_For_Successful_Queue_With_Crawl_Id()
         {
-            var (server, client) = Setup.CreateServer();
+            var (_, client) = Setup.CreateServer();
 
             var job = new CrawlJob
             {
-
+                Seeds = new List<Uri>
+                {
+                    new Uri("http://localhost")
+                }
             };
 
             var requestContent = new StringContent(JsonConvert.SerializeObject(job), Encoding.UTF8, "application/json");
@@ -34,18 +38,15 @@ namespace Peep.Tests.API.Integration.Controllers
 
             var content = JsonConvert.DeserializeObject<QueueCrawlResponseDTO>(await response.Content.ReadAsStringAsync());
 
-            Assert.AreEqual("1", content.CrawlId);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content.CrawlId));
         }
 
         [TestMethod]
         public async Task Queue_Returns_400_For_Request_Validation_Failure()
         {
-            var (server, client) = Setup.CreateServer();
+            var (_, client) = Setup.CreateServer();
 
-            var job = new CrawlJob
-            {
-
-            };
+            var job = new CrawlJob();
 
             var requestContent = new StringContent(JsonConvert.SerializeObject(job), Encoding.UTF8, "application/json");
 
@@ -64,7 +65,7 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (server, client) = Setup.CreateServer();
+            var (_, client) = Setup.CreateServer();
 
             var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
 
@@ -74,47 +75,118 @@ namespace Peep.Tests.API.Integration.Controllers
         [TestMethod]
         public async Task Get_Returns_200_With_Crawl_Still_In_Queue_Info()
         {
-            Assert.Fail();
+            const string CRAWL_ID = "crawl-id";
+
+            var (_, client, context) = Setup.CreateDataBackedServer();
+
+            context.QueuedJobs.Add(new QueuedJob
+            {
+                Id = CRAWL_ID
+            });
+
+            context.SaveChanges();
+
+            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+
+            response.EnsureSuccessStatusCode();
+
+            var responseContent =
+                JsonConvert.DeserializeObject<GetCrawlResponseDTO>(await response.Content.ReadAsStringAsync());
+
+            Assert.IsNull(responseContent.DateStarted);
         }
 
         [TestMethod]
         public async Task Get_Returns_200_With_Crawl_Progress_If_Crawl_Running()
         {
-            Assert.Fail();
+            const string CRAWL_ID = "crawl-id";
+
+            var (_, client, context) = Setup.CreateDataBackedServer();
+
+            context.QueuedJobs.Add(new QueuedJob
+            {
+                Id = CRAWL_ID
+            });
+
+            context.SaveChanges();
+
+            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = 
+                JsonConvert.DeserializeObject<GetCrawlResponseDTO>(await response.Content.ReadAsStringAsync());
+
+            Assert.IsNull(responseContent.DateCompleted);
         }
 
         [TestMethod]
         public async Task Get_Returns_200_With_Crawl_Result_If_Crawl_Complete()
         {
-            Assert.Fail();
+            const string CRAWL_ID = "crawl-id";
+            var DATE_COMPLETED = new DateTime(2020, 01, 01);
+
+            var (_, client, context) = Setup.CreateDataBackedServer();
+
+            context.CompletedJobs.Add(new CompletedJob
+            {
+                Id = CRAWL_ID,
+                DateCompleted = DATE_COMPLETED
+            });
+
+            context.SaveChanges();
+
+            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = JsonConvert.DeserializeObject<GetCrawlResponseDTO>(await response.Content.ReadAsStringAsync());
+
+            Assert.AreEqual(DATE_COMPLETED, responseContent.DateCompleted);
         }
 
         [TestMethod]
         public async Task Cancel_Returns_200_When_Crawl_Cancelled_Before_Being_Run()
         {
-            Assert.Fail();
+            const string CRAWL_ID = "crawl-id";
+
+            var (_, client, context) = Setup.CreateDataBackedServer();
+
+            context.QueuedJobs.Add(new QueuedJob
+            {
+                Id = CRAWL_ID
+            });
+
+            var response = await client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
+
+            response.EnsureSuccessStatusCode();
         }
 
         [TestMethod]
         public async Task Cancel_Returns_200_When_Crawl_Cancelled_During_Run()
         {
-            Assert.Fail();
+            const string CRAWL_ID = "crawl-id";
+
+            var (_, client, context) = Setup.CreateDataBackedServer();
+
+            context.RunningJobs.Add(new RunningJob
+            {
+                Id = CRAWL_ID
+            });
+
+            var response = await client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
+
+            response.EnsureSuccessStatusCode();
         }
 
         [TestMethod]
-        public async Task Cancel_Returns_200_When_Crawl_Cancelled_After_Run()
-        {
-            Assert.Fail();
-        }
-
-        [TestMethod]
-        public async Task Cancel_Returns_404_When_Crawl_Never_Queued()
+        public async Task Cancel_Returns_404_When_Crawl_Not_Queued_Or_Running()
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (server, client) = Setup.CreateServer();
+            var (_, client) = Setup.CreateServer();
 
-            var response = await client.GetAsync($"/crawl/cancel/{CRAWL_ID}");
+            var response = await client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
 
             Assert.AreEqual(404, (int)response.StatusCode);
         }

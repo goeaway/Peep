@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Peep.API.Application.Providers;
 using Peep.Core;
 using Serilog;
 using System;
@@ -27,6 +28,12 @@ namespace Peep.API
         public static IServiceCollection AddCrawler(this IServiceCollection services)
         {
             services.AddTransient<ICrawler, Crawler>();
+            return services;
+        }
+
+        public static IServiceCollection AddCrawlCancellationTokenProvider(this IServiceCollection services)
+        {
+            services.AddSingleton<ICrawlCancellationTokenProvider>(new CrawlCancellationTokenProvider());
             return services;
         }
     }

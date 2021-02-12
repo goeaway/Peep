@@ -693,7 +693,7 @@ namespace Peep.Tests
                 progress => {
                     Assert.IsNotNull(progress);
                     Assert.AreEqual(1, progress.CrawlCount);
-                    Assert.AreEqual(0, progress.DataCount);
+                    Assert.AreEqual(0, progress.Data.Count);
                     shouldFail = false;
                 },
                 CANCELLATION_TOKEN);

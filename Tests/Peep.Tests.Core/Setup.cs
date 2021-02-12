@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Peep.API;
 using Peep.API.Persistence;
 using System;
@@ -18,10 +19,10 @@ namespace Peep.Tests.Core
             return new PeepApiContext(options);
         }
 
-
         public class CreateServerOptions
         {
         }
+
         public static (TestServer, HttpClient) CreateServer(CreateServerOptions options = null)
         {
             if (options == null)
@@ -37,5 +38,26 @@ namespace Peep.Tests.Core
             var client = server.CreateClient();
             return (server, client);
         }
+
+        public static (TestServer, HttpClient, PeepApiContext) CreateDataBackedServer(CreateServerOptions options = null)
+        {
+            if (options == null)
+            {
+                options = new CreateServerOptions();
+            }
+
+            var context = CreateContext();
+
+            var server = new TestServer(new WebHostBuilder()
+                .UseStartup<Startup>()
+                .ConfigureTestServices(services =>
+                {
+                    services.AddSingleton(context);
+                }));
+            var client = server.CreateClient();
+            return (server, client, context);
+        }
+
+
     }
 }

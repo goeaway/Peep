@@ -24,6 +24,7 @@ using Peep.API.Application;
 using Peep.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Peep.API.Application.Providers;
+using Peep.API.Models.Entities;
 
 namespace Peep.API
 {
@@ -41,6 +42,7 @@ namespace Peep.API
         {
             services
                 .AddControllers()
+                .AddNewtonsoftJson()
                 .AddFluentValidation(fv => {
                     fv.RegisterValidatorsFromAssemblyContaining<QueueCrawlValidator>();
                 });
@@ -55,11 +57,9 @@ namespace Peep.API
 
             services.AddCrawler();
             services.AddLogger();
+            services.AddCrawlCancellationTokenProvider();
             services.AddTransient<INowProvider, NowProvider>();
-            //services.AddStackExchangeRedisCache(options =>
-            //{
-            //    options.
-            //});
+            services.AddAutoMapper(typeof(QueuedJob));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

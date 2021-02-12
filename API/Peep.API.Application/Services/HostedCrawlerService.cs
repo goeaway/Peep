@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Peep.API.Application.Options;
 using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
 using Peep.API.Persistence;
@@ -22,18 +23,23 @@ namespace Peep.API.Application
         private readonly ICrawler _crawler;
         private readonly INowProvider _nowProvider;
         private readonly PeepApiContext _context;
+        private readonly CrawlConfigOptions _options;
+        private readonly ICrawlCancellationTokenProvider _tokenProvider;
 
         public HostedCrawlerService(
             PeepApiContext context,
             ILogger logger,
             ICrawler crawler,
-            INowProvider nowProvider
-            )
+            INowProvider nowProvider,
+            CrawlConfigOptions options,
+            ICrawlCancellationTokenProvider tokenProvider)
         {
             _context = context;
             _logger = logger;
             _crawler = crawler;
             _nowProvider = nowProvider;
+            _options = options;
+            _tokenProvider = tokenProvider;
         }
 
         private bool TryGetJob(out QueuedJob job)
@@ -61,31 +67,64 @@ namespace Peep.API.Application
 
                 if (jobFound)
                 {
+                    var runningJob = new RunningJob
+                    {
+                        Id = queuedJob.Id,
+                        JobJson = queuedJob.JobJson,
+                        DateQueued = queuedJob.DateQueued,
+                        DateStarted = _nowProvider.Now,
+                    };
+
+                    _context.RunningJobs.Add(runningJob);
+                    _context.SaveChanges();
+
                     // enrich logs in here with job id
                     _logger.Information("Running job {Id}", queuedJob.Id);
                     var crawlJob = JsonConvert.DeserializeObject<CrawlJob>(queuedJob.JobJson);
 
                     var startTime = _nowProvider.Now;
+
+                    // create a linked token source so we can stop the crawl if the service needs to stop
+                    // or the job needs to stop
+                    var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+                        stoppingToken,
+                        _tokenProvider.GetToken(queuedJob.Id));
                     
                     try
                     {
-                        var result = await _crawler.Crawl(
+                        var channelReader = _crawler.Crawl(
                             crawlJob,
-                            stoppingToken);
+                            TimeSpan.FromMilliseconds(_options.ProgressUpdateMilliseconds),
+                            cancellationTokenSource.Token);
+
+                        // async iterate over channel's results
+                        // update the running jobs running totals of the crawl result
+                        await foreach(var result in channelReader.ReadAllAsync(cancellationTokenSource.Token))
+                        {
+                            runningJob.DataJson = JsonConvert.SerializeObject(result.Data);
+                            runningJob.CrawlCount = result.CrawlCount;
+                            runningJob.Duration = result.Duration;
+
+                            _context.SaveChanges();
+                        }
 
                         _logger.Information("Saving result");
 
+                        // build a completed job record based off the running job values
                         _context.CompletedJobs.Add(new CompletedJob
                         {
                             JobJson = queuedJob.JobJson,
                             Id = queuedJob.Id,
-                            CrawlCount = result.CrawlCount,
-                            DataJson = JsonConvert.SerializeObject(result.Data),
-                            Duration = result.Duration,
+                            CrawlCount = runningJob.CrawlCount,
+                            DataJson = runningJob.DataJson,
+                            Duration = runningJob.Duration,
                             DateQueued = queuedJob.DateQueued,
                             DateStarted = startTime,
                             DateCompleted = _nowProvider.Now,
                         });
+
+                        _context.RunningJobs.Remove(runningJob);
+                        _tokenProvider.DisposeOfToken(queuedJob.Id);
                     }
                     catch (CrawlerRunException e)
                     {

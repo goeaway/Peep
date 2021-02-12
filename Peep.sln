@@ -13,8 +13,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Crawler", "Crawler", "{74E4
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "API", "API", "{F1EB6935-E7C3-49AD-9596-CF2848390F9D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Manager", "Manager", "{17E4E23E-26A4-48EC-B3F2-E2E5133B508E}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{BE5CF83F-F4FD-404D-AF2A-301C2FD4ED13}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.API.Application", "API\Peep.API.Application\Peep.API.Application.csproj", "{89D25CB6-3C92-4859-AEE4-006A2D8689BE}"
@@ -31,7 +29,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Core", "Core\Peep.Core
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.Core", "Tests\Peep.Tests.Core\Peep.Tests.Core.csproj", "{6C693950-5150-4D9E-B2DE-C1BD4B2D26B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peep.API.Persistence", "API\Peep.API.Persistence\Peep.API.Persistence.csproj", "{D02A1025-32A3-4EA0-BE6B-7B0495E34B80}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.API.Persistence", "API\Peep.API.Persistence\Peep.API.Persistence.csproj", "{D02A1025-32A3-4EA0-BE6B-7B0495E34B80}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
