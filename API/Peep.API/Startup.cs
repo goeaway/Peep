@@ -25,6 +25,7 @@ using Peep.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
+using Peep.API.Application.Services;
 
 namespace Peep.API
 {
@@ -50,16 +51,19 @@ namespace Peep.API
             services.AddMediatR(Assembly.GetAssembly(typeof(QueueCrawlRequest)));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
-            services.AddHostedService<HostedCrawlerService>();
+            services.AddHostedService<HostedCrawlerService>(provider => new HostedCrawlerService(provider));
 
             services.AddDbContext<PeepApiContext>(
                 options => options.UseInMemoryDatabase("PeepApiDatabase"));
 
+            services.AddCrawlConfigOptions(Configuration);
             services.AddCrawler();
             services.AddLogger();
             services.AddCrawlCancellationTokenProvider();
-            services.AddTransient<INowProvider, NowProvider>();
+            services.AddNowProvider();
+            services.AddRunningCrawlJobProvider();
             services.AddAutoMapper(typeof(QueuedJob));
+            services.AddDistributedMemoryCache();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

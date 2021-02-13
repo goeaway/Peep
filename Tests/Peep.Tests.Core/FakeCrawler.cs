@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Peep.Tests.Core
@@ -15,7 +16,7 @@ namespace Peep.Tests.Core
             throw new NotImplementedException();
         }
 
-        public Task<CrawlResult> Crawl(CrawlJob job, TimeSpan progressUpdateTime, Action<CrawlResult> progressUpdate, CancellationToken cancellationToken)
+        public ChannelReader<CrawlResult> Crawl(CrawlJob job, TimeSpan channelUpdateTimeSpan, CancellationToken cancellationToken)
         {
             var countdown = new Stopwatch();
             countdown.Start();
@@ -30,21 +31,24 @@ namespace Peep.Tests.Core
                 }
             };
 
-            while (!cancellationToken.IsCancellationRequested)
+            var channel = Channel.CreateUnbounded<CrawlResult>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+
+            Task.Run(() =>
             {
-                if(countdown.Elapsed >= progressUpdateTime)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    progressUpdate?.Invoke(crawlResult);
-                    countdown.Restart();
+                    if (countdown.Elapsed >= channelUpdateTimeSpan)
+                    {
+                        channel.Writer.TryWrite(crawlResult);
+                        countdown.Restart();
+                    }
                 }
-            }
 
-            return Task.FromResult(crawlResult);
-        }
+                channel.Writer.TryWrite(crawlResult);
+                channel.Writer.Complete();
+            });
 
-        public Task<CrawlResult> Crawl(CrawlJob job, TimeSpan progressUpdateTime, Func<CrawlResult, Task> asyncProgressUpdate, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
+            return channel.Reader;
         }
     }
 }

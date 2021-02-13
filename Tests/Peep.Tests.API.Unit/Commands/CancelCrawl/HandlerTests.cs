@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Peep.API.Application.Commands.CancelQueuedCrawl;
 using Peep.API.Application.Exceptions;
+using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
 using Peep.Tests.Core;
 using System;
@@ -24,7 +26,10 @@ namespace Peep.Tests.API.Unit.Commands.CancelCrawl
 
             using var context = Setup.CreateContext();
 
-            var handler = new CancelCrawlHandler(context);
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            mockTokenProvider.Setup(mock => mock.CancelJob(CRAWL_ID)).Returns(false);
+
+            var handler = new CancelCrawlHandler(context, mockTokenProvider.Object);
 
             await Assert.ThrowsExceptionAsync<RequestFailedException>(
                 () => handler.Handle(request, CancellationToken.None));
@@ -45,7 +50,9 @@ namespace Peep.Tests.API.Unit.Commands.CancelCrawl
 
             context.SaveChanges();
 
-            var handler = new CancelCrawlHandler(context);
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+
+            var handler = new CancelCrawlHandler(context, mockTokenProvider.Object);
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -60,21 +67,14 @@ namespace Peep.Tests.API.Unit.Commands.CancelCrawl
 
             using var context = Setup.CreateContext();
 
-            context.RunningJobs.Add(new RunningJob
-            {
-                Id = CRAWL_ID,
-                Cancelled = false
-            });
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            mockTokenProvider.Setup(mock => mock.CancelJob(CRAWL_ID)).Returns(true);
 
-            context.SaveChanges();
-
-            var handler = new CancelCrawlHandler(context);
+            var handler = new CancelCrawlHandler(context, mockTokenProvider.Object);
 
             var result = await handler.Handle(request, CancellationToken.None);
 
-            var foundRunning = context.RunningJobs.Find(CRAWL_ID);
-
-            Assert.IsTrue(foundRunning.Cancelled);
+            mockTokenProvider.Verify(mock => mock.CancelJob(CRAWL_ID), Times.Once());
         }
     }
 }

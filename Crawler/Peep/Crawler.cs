@@ -95,15 +95,15 @@ namespace Peep
                     }
                     catch (Exception e)
                     {
-                        throw new CrawlerRunException(
-                            "Error occurred during crawl",
+                        channel.Writer.Complete(new CrawlerRunException(
+                            e.Message,
                             new CrawlResult
                             {
                                 CrawlCount = _crawlerOptions.Filter.Count,
                                 Data = data,
                                 Duration = stopwatch.Elapsed
                             },
-                            e);
+                            e));
                     }
                 }
 

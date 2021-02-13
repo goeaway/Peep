@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Peep.API.Application;
 using Peep.API.Application.Options;
 using Peep.API.Application.Providers;
+using Peep.API.Application.Services;
 using Peep.API.Models.Entities;
 using Peep.Core;
 using Peep.Exceptions;
@@ -14,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Peep.Tests.API.Unit.Services
@@ -22,9 +24,9 @@ namespace Peep.Tests.API.Unit.Services
     [TestCategory("API - Unit - Hosted Crawler Service")]
     public class HostedCrawlerServiceTests
     {
-        private readonly CrawlConfigOptions _options = new CrawlConfigOptions 
-        { 
-            ProgressUpdateMilliseconds = 100 
+        private readonly CrawlConfigOptions _options = new CrawlConfigOptions
+        {
+            ProgressUpdateMilliseconds = 100
         };
 
 
@@ -37,7 +39,17 @@ namespace Peep.Tests.API.Unit.Services
             var mockCrawler = new Mock<ICrawler>();
             var nowProvider = new NowProvider();
 
-            var service = new HostedCrawlerService(context, logger, mockCrawler.Object, nowProvider, _options);
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var mockRunningJobProvider = new Mock<IRunningCrawlJobProvider>();
+
+            var service = new HostedCrawlerService(
+                context,
+                logger,
+                mockCrawler.Object,
+                nowProvider,
+                _options,
+                mockTokenProvider.Object,
+                mockRunningJobProvider.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -67,13 +79,22 @@ namespace Peep.Tests.API.Unit.Services
             mockCrawler.Setup(mock => mock.Crawl(
                     It.IsAny<CrawlJob>(),
                     It.IsAny<TimeSpan>(),
-                    It.IsAny<Action<CrawlResult>>(),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CrawlResult());
+                .Returns(Channel.CreateUnbounded<CrawlResult>().Reader);
+
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var mockRunningJobProvider = new Mock<IRunningCrawlJobProvider>();
 
             var nowProvider = new NowProvider();
 
-            var service = new HostedCrawlerService(context, logger, mockCrawler.Object, nowProvider, _options);
+            var service = new HostedCrawlerService(
+                context, 
+                logger, 
+                mockCrawler.Object, 
+                nowProvider, 
+                _options,
+                mockTokenProvider.Object,
+                mockRunningJobProvider.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -92,10 +113,9 @@ namespace Peep.Tests.API.Unit.Services
 
             await service.StopAsync(cancellationTokenSource.Token);
             mockCrawler.Verify(mock => mock.Crawl(
-                It.IsAny<CrawlJob>(),
-                It.IsAny<TimeSpan>(),
-                It.IsAny<Action<CrawlResult>>(),
-                It.IsAny<CancellationToken>()), Times.Once());
+                    It.IsAny<CrawlJob>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<CancellationToken>()), Times.Once());
         }
 
         [TestMethod]
@@ -118,13 +138,22 @@ namespace Peep.Tests.API.Unit.Services
             mockCrawler.Setup(mock => mock.Crawl(
                     It.IsAny<CrawlJob>(),
                     It.IsAny<TimeSpan>(),
-                    It.IsAny<Action<CrawlResult>>(),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CrawlResult());
+                .Returns(Channel.CreateUnbounded<CrawlResult>().Reader);
+
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var mockRunningJobProvider = new Mock<IRunningCrawlJobProvider>();
 
             var nowProvider = new NowProvider();
 
-            var service = new HostedCrawlerService(context, logger, mockCrawler.Object, nowProvider, _options);
+            var service = new HostedCrawlerService(
+                context, 
+                logger, 
+                mockCrawler.Object, 
+                nowProvider, 
+                _options,
+                mockTokenProvider.Object,
+                mockRunningJobProvider.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -139,7 +168,7 @@ namespace Peep.Tests.API.Unit.Services
 
             context.SaveChanges();
 
-            await Task.Delay(1000);
+            await Task.Delay(1500);
 
             await service.StopAsync(cancellationTokenSource.Token);
             Assert.IsFalse(context.QueuedJobs.Any());
@@ -165,26 +194,44 @@ namespace Peep.Tests.API.Unit.Services
             using var context = Setup.CreateContext();
             var logger = new LoggerConfiguration().CreateLogger();
 
+            var channel = Channel.CreateUnbounded<CrawlResult>();
+            var CRAWL_RESULT = new CrawlResult
+            {
+                CrawlCount = CRAWL_COUNT,
+                Data = new Dictionary<Uri, IEnumerable<string>>
+                {
+                    { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
+                },
+                Duration = DURATION
+            };
+
             var mockCrawler = new Mock<ICrawler>();
             mockCrawler.Setup(mock => mock.Crawl(
                     It.IsAny<CrawlJob>(),
                     It.IsAny<TimeSpan>(),
-                    It.IsAny<Action<CrawlResult>>(),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CrawlResult
-                {
-                    Data = new Dictionary<Uri, IEnumerable<string>>
-                    {
-                        { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
-                    },
-                    CrawlCount = CRAWL_COUNT,
-                    Duration = DURATION
+                .Returns(channel.Reader);
+
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var mockRunningJobProvider = new Mock<IRunningCrawlJobProvider>();
+            mockRunningJobProvider
+                .Setup(mock => mock.GetRunningJob(It.IsAny<string>()))
+                .ReturnsAsync(new RunningJob 
+                { 
+                    Id = JOB_ID
                 });
 
             var testNow = new DateTime(2020, 01, 01);
             var nowProvider = new NowProvider(testNow);
 
-            var service = new HostedCrawlerService(context, logger, mockCrawler.Object, nowProvider, _options);
+            var service = new HostedCrawlerService(
+                context, 
+                logger, 
+                mockCrawler.Object, 
+                nowProvider, 
+                _options,
+                mockTokenProvider.Object,
+                mockRunningJobProvider.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -198,6 +245,11 @@ namespace Peep.Tests.API.Unit.Services
             });
 
             context.SaveChanges();
+
+            await Task.Delay(1000);
+
+            await channel.Writer.WriteAsync(CRAWL_RESULT);
+            channel.Writer.Complete();
 
             await Task.Delay(1000);
 
@@ -236,26 +288,45 @@ namespace Peep.Tests.API.Unit.Services
             using var context = Setup.CreateContext();
             var logger = new LoggerConfiguration().CreateLogger();
 
+            var channel = Channel.CreateUnbounded<CrawlResult>();
+            var CRAWL_RESULT = new CrawlResult
+            {
+                CrawlCount = CRAWL_COUNT,
+                Data = new Dictionary<Uri, IEnumerable<string>>
+                {
+                    { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
+                },
+                Duration = DURATION
+            };
+
             var mockCrawler = new Mock<ICrawler>();
             mockCrawler.Setup(mock => mock.Crawl(
                     It.IsAny<CrawlJob>(),
                     It.IsAny<TimeSpan>(),
-                    It.IsAny<Action<CrawlResult>>(),
                     It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new CrawlerRunException(ERROR_MESSAGE, new CrawlResult 
-                { 
-                    Data = new Dictionary<Uri, IEnumerable<string>>
-                    {
-                        { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
-                    },
-                    CrawlCount = CRAWL_COUNT,
-                    Duration = DURATION
-                }));
+                .Returns(channel);
+
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var mockRunningJobProvider = new Mock<IRunningCrawlJobProvider>();
+            mockRunningJobProvider
+                .Setup(mock => mock.GetRunningJob(It.IsAny<string>()))
+                .ReturnsAsync(new RunningJob
+                {
+                    Id = JOB_ID
+                });
+
 
             var testNow = new DateTime(2020, 01, 01);
             var nowProvider = new NowProvider(testNow);
 
-            var service = new HostedCrawlerService(context, logger, mockCrawler.Object, nowProvider, _options);
+            var service = new HostedCrawlerService(
+                context, 
+                logger, 
+                mockCrawler.Object, 
+                nowProvider, 
+                _options,
+                mockTokenProvider.Object,
+                mockRunningJobProvider.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -270,7 +341,19 @@ namespace Peep.Tests.API.Unit.Services
 
             context.SaveChanges();
 
-            await Task.Delay(2000);
+            await Task.Delay(1000);
+
+            channel.Writer.Complete(new CrawlerRunException(ERROR_MESSAGE, new CrawlResult
+            {
+                Data = new Dictionary<Uri, IEnumerable<string>>
+                    {
+                        { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
+                    },
+                CrawlCount = CRAWL_COUNT,
+                Duration = DURATION
+            }));
+
+            await Task.Delay(1000);
 
             await service.StopAsync(cancellationTokenSource.Token);
             Assert.IsTrue(context.ErroredJobs.Any());
@@ -284,12 +367,6 @@ namespace Peep.Tests.API.Unit.Services
             Assert.AreEqual(DATA_VALUE, errorData.First().Value.First());
             Assert.AreEqual(nowProvider.Now, erroredJob.DateStarted);
             Assert.AreEqual(nowProvider.Now, erroredJob.DateCompleted);
-        }
-
-        [TestMethod]
-        public async Task Saves_Running_Job_During_Crawl()
-        {
-            Assert.Fail();
         }
 
         [TestMethod]
@@ -311,27 +388,44 @@ namespace Peep.Tests.API.Unit.Services
 
             using var context = Setup.CreateContext();
             var logger = new LoggerConfiguration().CreateLogger();
+            var channel = Channel.CreateUnbounded<CrawlResult>();
+            var CRAWL_RESULT = new CrawlResult
+            {
+                CrawlCount = CRAWL_COUNT,
+                Data = new Dictionary<Uri, IEnumerable<string>>
+                {
+                    { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
+                },
+                Duration = DURATION
+            };
 
             var mockCrawler = new Mock<ICrawler>();
             mockCrawler.Setup(mock => mock.Crawl(
-                    It.IsAny<CrawlJob>(), 
+                    It.IsAny<CrawlJob>(),
                     It.IsAny<TimeSpan>(),
-                    It.IsAny<Action<CrawlResult>>(),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CrawlResult
+                .Returns(channel);
+
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var mockRunningJobProvider = new Mock<IRunningCrawlJobProvider>();
+            mockRunningJobProvider
+                .Setup(mock => mock.GetRunningJob(It.IsAny<string>()))
+                .ReturnsAsync(new RunningJob
                 {
-                    Data = new Dictionary<Uri, IEnumerable<string>>
-                    {
-                        { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
-                    },
-                    CrawlCount = CRAWL_COUNT,
-                    Duration = DURATION
+                    Id = JOB_ID
                 });
 
             var testNow = new DateTime(2020, 01, 01);
             var nowProvider = new NowProvider(testNow);
 
-            var service = new HostedCrawlerService(context, logger, mockCrawler.Object, nowProvider, _options);
+            var service = new HostedCrawlerService(
+                context, 
+                logger, 
+                mockCrawler.Object, 
+                nowProvider, 
+                _options,
+                mockTokenProvider.Object,
+                mockRunningJobProvider.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -346,17 +440,28 @@ namespace Peep.Tests.API.Unit.Services
 
             context.SaveChanges();
 
-            await Task.Delay(2000);
+            await Task.Delay(1000);
+
+            await channel.Writer.WriteAsync(CRAWL_RESULT);
+            channel.Writer.Complete();
+
+            await Task.Delay(1000);
 
             await service.StopAsync(cancellationTokenSource.Token);
-            Assert.IsFalse(context.RunningJobs.Any());
+
+            mockRunningJobProvider.Verify(mock => mock.SaveJob(It.IsAny<RunningJob>()), Times.AtLeastOnce());
+            mockRunningJobProvider.Verify(mock => mock.RemoveJob(JOB_ID), Times.Once());
         }
 
         [TestMethod]
-        public async Task Stops_Crawl_If_Running_Job_Flagged_As_Cancelled()
+        public async Task Cancels_Crawl_When_Token_Provider_Signals_Job_Cancel()
         {
+            const int CRAWL_COUNT = 2;
             const string JOB_ID = "job id";
             var DATE_QUEUED = new DateTime(2021, 01, 01);
+            var DURATION = TimeSpan.FromSeconds(2);
+            var DATA_KEY = "http://localhost/";
+            var DATA_VALUE = "data";
             var JOB = new CrawlJob
             {
                 Seeds = new List<Uri>
@@ -367,12 +472,48 @@ namespace Peep.Tests.API.Unit.Services
 
             using var context = Setup.CreateContext();
             var logger = new LoggerConfiguration().CreateLogger();
+            var channel = Channel.CreateUnbounded<CrawlResult>();
+            var CRAWL_RESULT = new CrawlResult
+            {
+                CrawlCount = CRAWL_COUNT,
+                Data = new Dictionary<Uri, IEnumerable<string>>
+                {
+                    { new Uri(DATA_KEY), new List<string> { DATA_VALUE } }
+                },
+                Duration = DURATION
+            };
+
+            var mockCrawler = new Mock<ICrawler>();
+            mockCrawler.Setup(mock => mock.Crawl(
+                    It.IsAny<CrawlJob>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(channel);
+
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var alreadyCancelledTokenSource = new CancellationTokenSource();
+            alreadyCancelledTokenSource.Cancel();
+            mockTokenProvider.Setup(mock => mock.GetToken(JOB_ID)).Returns(alreadyCancelledTokenSource.Token);
+
+            var mockRunningJobProvider = new Mock<IRunningCrawlJobProvider>();
+            mockRunningJobProvider
+                .Setup(mock => mock.GetRunningJob(It.IsAny<string>()))
+                .ReturnsAsync(new RunningJob
+                {
+                    Id = JOB_ID
+                });
 
             var testNow = new DateTime(2020, 01, 01);
             var nowProvider = new NowProvider(testNow);
-            var fakeCrawler = new FakeCrawler();
 
-            var service = new HostedCrawlerService(context, logger, fakeCrawler, nowProvider, _options);
+            var service = new HostedCrawlerService(
+                context,
+                logger,
+                mockCrawler.Object,
+                nowProvider,
+                _options,
+                mockTokenProvider.Object,
+                mockRunningJobProvider.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -387,15 +528,11 @@ namespace Peep.Tests.API.Unit.Services
 
             context.SaveChanges();
 
-            await Task.Delay(2000);
-
-            var running = context.RunningJobs.Find(JOB_ID);
-
-            running.Cancelled = true;
-
-            context.SaveChanges();
+            await Task.Delay(1000);
 
             await service.StopAsync(cancellationTokenSource.Token);
+
+            Assert.IsTrue(context.CompletedJobs.Any());
         }
     }
 }

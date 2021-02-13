@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Peep.API;
+using Peep.API.Application.Providers;
+using Peep.API.Application.Services;
 using Peep.API.Persistence;
 using System;
 using System.Net.Http;
@@ -21,6 +23,8 @@ namespace Peep.Tests.Core
 
         public class CreateServerOptions
         {
+            public IRunningCrawlJobProvider RunningCrawlJobRepository { get; set; }
+            public ICrawlCancellationTokenProvider TokenProvider { get; set; }
         }
 
         public static (TestServer, HttpClient) CreateServer(CreateServerOptions options = null)
@@ -34,6 +38,15 @@ namespace Peep.Tests.Core
                 .UseStartup<Startup>()
                 .ConfigureTestServices(services =>
                 {
+                    if (options.RunningCrawlJobRepository != null)
+                    {
+                        services.AddSingleton(options.RunningCrawlJobRepository);
+                    }
+
+                    if (options.TokenProvider != null)
+                    {
+                        services.AddSingleton(options.TokenProvider);
+                    }
                 }));
             var client = server.CreateClient();
             return (server, client);
@@ -53,6 +66,16 @@ namespace Peep.Tests.Core
                 .ConfigureTestServices(services =>
                 {
                     services.AddSingleton(context);
+
+                    if(options.RunningCrawlJobRepository != null)
+                    {
+                        services.AddSingleton(options.RunningCrawlJobRepository);
+                    }
+                    
+                    if(options.TokenProvider != null)
+                    {
+                        services.AddSingleton(options.TokenProvider);
+                    }
                 }));
             var client = server.CreateClient();
             return (server, client, context);

@@ -1,11 +1,10 @@
 ﻿using AutoMapper;
 using MediatR;
 using Peep.API.Application.Exceptions;
+using Peep.API.Application.Providers;
+using Peep.API.Application.Services;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,11 +14,16 @@ namespace Peep.API.Application.Queries.GetCrawl
     {
         private readonly PeepApiContext _context;
         private readonly IMapper _mapper;
+        private readonly IRunningCrawlJobProvider _runningCrawlJobRepository;
 
-        public GetCrawlHandler(PeepApiContext context, IMapper mapper)
+        public GetCrawlHandler(
+            PeepApiContext context, 
+            IMapper mapper,
+            IRunningCrawlJobProvider runningCrawlJobRepository)
         {
             _context = context;
             _mapper = mapper;
+            _runningCrawlJobRepository = runningCrawlJobRepository;
         }
 
         public async Task<GetCrawlResponseDTO> Handle(GetCrawlRequest request, CancellationToken cancellationToken)
@@ -32,7 +36,7 @@ namespace Peep.API.Application.Queries.GetCrawl
             }
 
             // check for running
-            var foundRunning = await _context.RunningJobs.FindAsync(request.CrawlId);
+            var foundRunning = await _runningCrawlJobRepository.GetRunningJob(request.CrawlId);
             if(foundRunning != null)
             {
                 return _mapper.Map<GetCrawlResponseDTO>(foundRunning);

@@ -1,5 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Newtonsoft.Json;
+using Peep.API.Application.Providers;
+using Peep.API.Application.Services;
 using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
 using Peep.Core;
@@ -167,11 +170,13 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (_, client, context) = Setup.CreateDataBackedServer();
+            var mockTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
 
-            context.RunningJobs.Add(new RunningJob
+            mockTokenProvider.Setup(mock => mock.CancelJob(CRAWL_ID)).Returns(true);
+
+            var (_, client) = Setup.CreateServer(new Setup.CreateServerOptions
             {
-                Id = CRAWL_ID
+                TokenProvider = mockTokenProvider.Object
             });
 
             var response = await client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
