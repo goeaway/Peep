@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Polly;
+using Polly.CircuitBreaker;
 
 namespace Peep
 {
@@ -68,10 +70,10 @@ namespace Peep
             // have a task in here that starts the crawl, and then when we get to the end of that set the channel as complete
             // fire and forget task?
             Task.Run(async () =>
-            {
+            { 
                 _crawlerOptions.Filter.Clear();
 
-                var queue = new ConcurrentQueue<Uri>(job.Seeds);
+                var queue = new Queue<Uri>(job.Seeds);
                 var data = new Dictionary<Uri, IEnumerable<string>>();
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
@@ -136,7 +138,7 @@ namespace Peep
 
             _crawlerOptions.Filter.Clear();
 
-            var queue = new ConcurrentQueue<Uri>(job.Seeds);
+            var queue = new Queue<Uri>(job.Seeds);
             var data = new Dictionary<Uri, IEnumerable<string>>();
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -183,7 +185,7 @@ namespace Peep
 
         private async Task InnerCrawl(
             CrawlJob job, 
-            ConcurrentQueue<Uri> queue, 
+            Queue<Uri> queue, 
             Dictionary<Uri, IEnumerable<string>> data,
             IBrowserAdapter browserAdapter, 
             string userAgent,
@@ -192,10 +194,12 @@ namespace Peep
             ChannelWriter<CrawlResult> channelWriter = null,
             TimeSpan channelWriterUpdateTime = default)
         {
-            var waitStopwatch = new Stopwatch();
             var progressStopwatch = new Stopwatch();
             progressStopwatch.Start();
-            var emptyQueueRetriesCount = 0;
+
+            var pageActionRetryPolicy = Policy
+                .Handle<WaitTaskTimeoutException>()
+                .WaitAndRetryAsync(_crawlerOptions.PageActionRetryCount, attempt => TimeSpan.FromMilliseconds(200));
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -221,30 +225,21 @@ namespace Peep
                     progressStopwatch.Restart();
                 }
 
-                // get next URI 
-                queue.TryDequeue(out var next);
-                // if no next or filter already contains it, continue
-                if (next == null || _crawlerOptions.Filter.Contains(next.AbsoluteUri))
+                // get next uri, if nothing in queue error will bubble up from queue
+                var next = queue.Dequeue();
+
+                // if filter contains next already we continue
+                if (_crawlerOptions.Filter.Contains(next.AbsoluteUri))
                 {
-                    emptyQueueRetriesCount++;
-
-                    if(_crawlerOptions.MaxEmptyQueueRetryCount > -1 && emptyQueueRetriesCount > _crawlerOptions.MaxEmptyQueueRetryCount)
-                    {
-                        throw new CrawlerEmptyQueueRetryLimitExceededException("No URLs added to the queue");
-                    }
-
                     continue;
-                }
-
-                if(emptyQueueRetriesCount > 0)
-                {
-                    emptyQueueRetriesCount = 0;
                 }
 
                 var response = await browserAdapter.NavigateToAsync(next);
 
                 if(response && !cancellationToken.IsCancellationRequested)
                 {
+                    _crawlerOptions.Filter.Add(next.AbsoluteUri);
+
                     // perform any page actions to get the page in a certain state before extracting content
                     if(job.PageActions != null && job.PageActions.Any())
                     {
@@ -253,13 +248,14 @@ namespace Peep
                             // only perform if the action if the page action doesn't have a uri regex, or it matches the current page
                             if(string.IsNullOrWhiteSpace(paction.UriRegex) || Regex.IsMatch(next.AbsoluteUri, paction.UriRegex))
                             {
-                                await paction.Perform(browserAdapter);
+                                // retry here
+                                await pageActionRetryPolicy
+                                    .ExecuteAsync(() => paction.Perform(browserAdapter));
                             }
                         }
                     }
 
                     var content = await browserAdapter.GetContentAsync();
-                    _crawlerOptions.Filter.Add(next.AbsoluteUri);
 
                     // extract URIs and data from content
                     await ExtractData(
@@ -278,7 +274,7 @@ namespace Peep
         private async Task ExtractData(
             string content,
             Uri currentUri, 
-            ConcurrentQueue<Uri> queue,
+            Queue<Uri> queue,
             Dictionary<Uri, IEnumerable<string>> data,
             CrawlJob job,
             string userAgent,

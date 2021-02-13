@@ -120,7 +120,6 @@ namespace Peep.Tests
             var options = new CrawlerOptions
             {
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(options);
@@ -167,7 +166,6 @@ namespace Peep.Tests
             var options = new CrawlerOptions
             {
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(options);
@@ -215,7 +213,6 @@ namespace Peep.Tests
             var options = new CrawlerOptions
             {
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(options);
@@ -236,11 +233,12 @@ namespace Peep.Tests
         public async Task Does_Not_Crawl_The_Same_Page_Twice()
         {
             var URI = new Uri("http://localhost/");
-            const string EXTRACTED_DATA = "<a href='/'></a>";
+            const string EXTRACTED_DATA = "<a href='/'></a><a href='/some-other-page'></a>";
             const string USER_AGENT = "user-agent";
             var CANCELLATION_TOKEN = new CancellationTokenSource().Token;
             var JOB = new CrawlJob
             {
+                IgnoreRobots = false,
                 Seeds = new List<Uri>
                 {
                     URI
@@ -249,8 +247,8 @@ namespace Peep.Tests
                 {
                     new SerialisableStopCondition
                     {
-                        Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Value = 2,
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -262,7 +260,7 @@ namespace Peep.Tests
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
             mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
@@ -273,14 +271,16 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
 
             var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
 
-            mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Once());
+            mockBrowserAdapter.Verify(
+                mock => mock.NavigateToAsync(
+                    It.Is<Uri>(uri => uri.AbsoluteUri == "http://localhost/some-other-page/")), 
+                Times.Once());
         }
 
         [TestMethod]
@@ -300,8 +300,8 @@ namespace Peep.Tests
                 {
                     new SerialisableStopCondition
                     {
-                        Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Value = 2,
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -324,15 +324,11 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
 
-            var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
-
-            mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Once());
-            mockRobotParser.Verify(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()), Times.Once());
+            await Assert.ThrowsExceptionAsync<CrawlerRunException>(() => crawler.Crawl(JOB, CANCELLATION_TOKEN));
         }
 
         [TestMethod]
@@ -353,8 +349,8 @@ namespace Peep.Tests
                 {
                     new SerialisableStopCondition
                     {
-                        Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Value = 2,
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -366,7 +362,7 @@ namespace Peep.Tests
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
             mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
@@ -377,22 +373,23 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
 
             var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
 
-            mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Exactly(2));
-            mockRobotParser.Verify(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()), Times.Never());
+            mockBrowserAdapter
+                .Verify(
+                    mock => mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "http://localhost/forbidden/")), 
+                    Times.Once());
         }
 
         [TestMethod]
         public async Task Does_Not_Crawl_Page_That_Does_Not_Match_Source()
         {
             var URI = new Uri("http://localhost/");
-            const string EXTRACTED_DATA = "<a href='//test.com/'></a>";
+            const string EXTRACTED_DATA = "<a href='//test.com/'></a><a href='/valid'></a>";
             const string USER_AGENT = "user-agent";
             var CANCELLATION_TOKEN = new CancellationTokenSource().Token;
             var JOB = new CrawlJob
@@ -405,8 +402,8 @@ namespace Peep.Tests
                 {
                     new SerialisableStopCondition
                     {
-                        Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Value = 2,
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -418,7 +415,7 @@ namespace Peep.Tests
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
             mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
@@ -429,14 +426,16 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
 
             var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
 
-            mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Once());
+            mockBrowserAdapter
+                .Verify(mock => 
+                    mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "https://test.com/")), 
+                    Times.Never());
         }
 
         [TestMethod]
@@ -457,8 +456,8 @@ namespace Peep.Tests
                 {
                     new SerialisableStopCondition
                     {
-                        Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Value = 2,
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -470,7 +469,7 @@ namespace Peep.Tests
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
             mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
@@ -481,14 +480,15 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
 
             var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
 
-            mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Exactly(2));
+            mockBrowserAdapter.Verify(
+                mock => mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "http://localhost/different-area/")), 
+                Times.Once());
         }
 
         [TestMethod]
@@ -509,8 +509,8 @@ namespace Peep.Tests
                 {
                     new SerialisableStopCondition
                     {
-                        Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Value = 2,
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -533,14 +533,11 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
 
-            var result = await crawler.Crawl(JOB, CANCELLATION_TOKEN);
-
-            mockBrowserAdapter.Verify(mock => mock.NavigateToAsync(It.IsAny<Uri>()), Times.Once());
+            await Assert.ThrowsExceptionAsync<CrawlerRunException>(() => crawler.Crawl(JOB, CANCELLATION_TOKEN));
         }
 
         [TestMethod]
@@ -568,7 +565,7 @@ namespace Peep.Tests
                     new SerialisableStopCondition
                     {
                         Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -587,7 +584,6 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -622,7 +618,7 @@ namespace Peep.Tests
                     new SerialisableStopCondition
                     {
                         Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -641,7 +637,6 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -669,7 +664,7 @@ namespace Peep.Tests
                     new SerialisableStopCondition
                     {
                         Value = 1,
-                        Type = SerialisableStopConditionType.MaxDurationSeconds
+                        Type = SerialisableStopConditionType.MaxCrawlCount
                     }
                 }
             };
@@ -692,22 +687,21 @@ namespace Peep.Tests
             {
                 RobotParser = mockRobotParser.Object,
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
 
-            var channelReader = crawler.Crawl(JOB, TimeSpan.FromMilliseconds(500), CANCELLATION_TOKEN);
+            var channelReader = crawler.Crawl(JOB, TimeSpan.MinValue, CANCELLATION_TOKEN);
 
-            var readCount = 0;
+            var hasRead = false;
 
             await foreach (var result in channelReader.ReadAllAsync(CANCELLATION_TOKEN))
             {
                 Assert.IsNotNull(result);
-                readCount++;
+                hasRead = true;
             }
 
-            Assert.AreEqual(2, readCount);
+            Assert.IsTrue(hasRead);
         }
     }
 }

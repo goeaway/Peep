@@ -1,8 +1,10 @@
 bin/
 obj/
 Deploy/
-Peep.Tests/
+Tests/
+Manager/
 TestResults/
 .gitattributes
 .gitignore
 Peep.sln
+.local-chromium/

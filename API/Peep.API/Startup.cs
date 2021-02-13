@@ -98,7 +98,6 @@ namespace Peep.API
                 var uri = ctx.Request.Path;
 
                 var logger = app.ApplicationServices.GetService<ILogger>();
-                logger.Error(exception, "Error occurred when processing request {uri}", uri);
 
                 var errorResponse = new ErrorResponseDTO
                 {
@@ -110,12 +109,18 @@ namespace Peep.API
                     ctx.Response.StatusCode = 400;
                     errorResponse.Message = "Validation error";
                     errorResponse.Errors = (exception as RequestValidationFailedException).Failures.Select(f => f.ErrorMessage);
+                    logger.Error("Validation error occurred: {Errors}", string.Join(", ", errorResponse.Errors));
                 }
                 else if (exception is RequestFailedException)
                 {
                     var rfException = exception as RequestFailedException;
                     ctx.Response.StatusCode = (int)rfException.StatusCode;
                     errorResponse.Message = rfException.Message;
+                    logger.Error("Request failed ({StatusCode}): {Error}", rfException.StatusCode, rfException.Message);
+                }
+                else
+                {
+                    logger.Error(exception, "Error occurred when processing request {uri}", uri);
                 }
 
                 await ctx.Response.WriteAsync(JsonConvert.SerializeObject(errorResponse));
