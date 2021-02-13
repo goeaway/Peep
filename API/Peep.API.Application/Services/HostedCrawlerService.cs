@@ -122,7 +122,7 @@ namespace Peep.API.Application.Services
                     {
                         var channelReader = _crawler.Crawl(
                             crawlJob,
-                            TimeSpan.FromMilliseconds(_options.ProgressUpdateMilliseconds),
+                            TimeSpan.FromMilliseconds(Math.Min(_options.ProgressUpdateMilliseconds, 100)),
                             cancellationTokenSource.Token);
 
                         // async iterate over channel's results
@@ -158,7 +158,7 @@ namespace Peep.API.Application.Services
                             DateCompleted = _nowProvider.Now,
                         });
                     }
-                    catch (TaskCanceledException) // cancellation token for channel reader causes this
+                    catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException) // cancellation token for channel reader causes this
                     {
                         var runningJob = await _runningCrawlJobRepository.GetRunningJob(queuedJob.Id);
 

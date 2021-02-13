@@ -16,5 +16,7 @@ namespace Peep
             = new RobotParser(new HttpClient());
         public IFilter Filter { get; set; }
             = new BloomFilter(1_000_000);
+        public int MaxEmptyQueueRetryCount { get; set; }
+            = 3;
     }
 }

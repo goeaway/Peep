@@ -73,5 +73,22 @@ namespace Peep.Tests
 
             Assert.IsFalse(filter.Contains(-1 + ""));
         }
+
+        [TestMethod]
+        public void Clear_Clears_Data()
+        {
+            const int COUNT = 1_000_000;
+
+            var filter = new BloomFilter(COUNT);
+
+            for (var i = 0; i < COUNT; i++)
+            {
+                filter.Add(i + "");
+            }
+
+            filter.Clear();
+
+            Assert.IsFalse(filter.Contains(0 + ""));
+        }
     }
 }

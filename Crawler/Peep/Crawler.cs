@@ -69,6 +69,8 @@ namespace Peep
             // fire and forget task?
             Task.Run(async () =>
             {
+                _crawlerOptions.Filter.Clear();
+
                 var queue = new ConcurrentQueue<Uri>(job.Seeds);
                 var data = new Dictionary<Uri, IEnumerable<string>>();
                 var stopwatch = new Stopwatch();
@@ -132,6 +134,8 @@ namespace Peep
                 throw new InvalidOperationException("at least one seed URI is required");
             }
 
+            _crawlerOptions.Filter.Clear();
+
             var queue = new ConcurrentQueue<Uri>(job.Seeds);
             var data = new Dictionary<Uri, IEnumerable<string>>();
             var stopwatch = new Stopwatch();
@@ -191,6 +195,7 @@ namespace Peep
             var waitStopwatch = new Stopwatch();
             var progressStopwatch = new Stopwatch();
             progressStopwatch.Start();
+            var emptyQueueRetriesCount = 0;
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -221,7 +226,19 @@ namespace Peep
                 // if no next or filter already contains it, continue
                 if (next == null || _crawlerOptions.Filter.Contains(next.AbsoluteUri))
                 {
+                    emptyQueueRetriesCount++;
+
+                    if(_crawlerOptions.MaxEmptyQueueRetryCount > -1 && emptyQueueRetriesCount > _crawlerOptions.MaxEmptyQueueRetryCount)
+                    {
+                        throw new CrawlerEmptyQueueRetryLimitExceededException("No URLs added to the queue");
+                    }
+
                     continue;
+                }
+
+                if(emptyQueueRetriesCount > 0)
+                {
+                    emptyQueueRetriesCount = 0;
                 }
 
                 var response = await browserAdapter.NavigateToAsync(next);

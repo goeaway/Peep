@@ -8,8 +8,9 @@ namespace Peep.Filtering
     public class BloomFilter : IFilter
     {
         private readonly int _hashFunctionCount;
-        private readonly BitArray _hashBits;
+        private BitArray _hashBits;
         private readonly HashFunction _getHashSecondary;
+        private readonly int _m;
 
         public int Count { get; private set; }
 
@@ -94,6 +95,7 @@ namespace Peep.Filtering
 
             this._hashFunctionCount = k;
             this._hashBits = new BitArray(m);
+            _m = m;
         }
 
         /// <summary>
@@ -140,6 +142,12 @@ namespace Peep.Filtering
             }
 
             return true;
+        }
+
+        public void Clear()
+        {
+            Count = 0;
+            _hashBits = new BitArray(_m);
         }
 
         /// <summary>

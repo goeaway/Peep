@@ -119,7 +119,8 @@ namespace Peep.Tests
 
             var options = new CrawlerOptions
             {
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(options);
@@ -165,7 +166,8 @@ namespace Peep.Tests
 
             var options = new CrawlerOptions
             {
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(options);
@@ -212,7 +214,8 @@ namespace Peep.Tests
 
             var options = new CrawlerOptions
             {
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(options);
@@ -269,7 +272,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -319,7 +323,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -371,7 +376,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -422,7 +428,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -473,7 +480,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -524,7 +532,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -577,7 +586,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -630,7 +640,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);
@@ -639,70 +650,6 @@ namespace Peep.Tests
 
             mockPageAction.Verify(mock => mock.Perform(mockBrowserAdapter.Object), Times.Never());
         }
-
-        //[TestMethod]
-        //public async Task Crawl_Calls_ProgressUpdate_Periodically_From_TimeSpan()
-        //{
-        //    var URI = new Uri("http://localhost/");
-        //    const string EXTRACTED_DATA = "<a href='//test.com/'></a>";
-        //    const string USER_AGENT = "user-agent";
-        //    var CANCELLATION_TOKEN = new CancellationTokenSource().Token;
-        //    var JOB = new CrawlJob
-        //    {
-        //        Seeds = new List<Uri>
-        //        {
-        //            URI
-        //        },
-        //        StopConditions = new List<SerialisableStopCondition>
-        //        {
-        //            new SerialisableStopCondition
-        //            {
-        //                Value = 2,
-        //                Type = SerialisableStopConditionType.MaxDurationSeconds
-        //            }
-        //        }
-        //    };
-
-        //    var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
-        //    var mockBrowserAdapter = new Mock<IBrowserAdapter>();
-        //    var mockRobotParser = new Mock<IRobotParser>();
-
-        //    mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-        //        .ReturnsAsync(mockBrowserAdapter.Object);
-
-        //    mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
-        //    mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-        //    mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
-
-        //    mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
-        //        .ReturnsAsync(false);
-
-        //    var crawlerOptions = new CrawlerOptions
-        //    {
-        //        RobotParser = mockRobotParser.Object,
-        //        BrowserAdapterFactory = mockBrowserAdapterFactory.Object
-        //    };
-
-        //    var crawler = new Crawler(crawlerOptions);
-        //    var shouldFail = true;
-
-        //    // not the best way to assert but whatever
-        //    var result = await crawler.Crawl(
-        //        JOB, 
-        //        TimeSpan.FromSeconds(1),
-        //        progress => {
-        //            Assert.IsNotNull(progress);
-        //            Assert.AreEqual(1, progress.CrawlCount);
-        //            Assert.AreEqual(0, progress.Data.Count);
-        //            shouldFail = false;
-        //        },
-        //        CANCELLATION_TOKEN);
-
-        //    if(shouldFail)
-        //    {
-        //        Assert.Fail("progress updater was not called");
-        //    }
-        //}
 
         [TestMethod]
         public async Task ChannelCrawl_Should_Periodically_Push_Data_To_Channel()
@@ -744,7 +691,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                MaxEmptyQueueRetryCount = -1
             };
 
             var crawler = new Crawler(crawlerOptions);

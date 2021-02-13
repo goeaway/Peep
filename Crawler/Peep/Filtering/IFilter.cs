@@ -9,5 +9,6 @@ namespace Peep.Filtering
         int Count { get; }
         void Add(string uri);
         bool Contains(string uri);
+        void Clear();
     }
 }
