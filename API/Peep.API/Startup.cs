@@ -13,19 +13,19 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Peep.API.Application.Behaviours;
 using Peep.API.Application.Commands.QueueCrawl;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Peep.API.Models.DTOs;
 using Microsoft.AspNetCore.Diagnostics;
-using Peep.API.Application.Exceptions;
 using Peep.API.Application;
 using Peep.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
 using Peep.API.Application.Services;
+using Peep.Core.API.Exceptions;
+using Peep.Core.API.Behaviours;
 
 namespace Peep.API
 {
@@ -51,7 +51,7 @@ namespace Peep.API
             services.AddMediatR(Assembly.GetAssembly(typeof(QueueCrawlRequest)));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
-            services.AddHostedService<HostedCrawlerService>(provider => new HostedCrawlerService(provider));
+            services.AddHostedService<CrawlerManagerService>(provider => new CrawlerManagerService(provider));
 
             services.AddDbContext<PeepApiContext>(
                 options => options.UseInMemoryDatabase("PeepApiDatabase"));

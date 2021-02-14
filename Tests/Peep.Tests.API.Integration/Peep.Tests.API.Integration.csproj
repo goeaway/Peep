@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Peep.Tests.Core\Peep.Tests.Core.csproj" />
+    <ProjectReference Include="..\Peep.Tests.API.Core\Peep.Tests.API.Core.csproj" />
   </ItemGroup>
 
 </Project>

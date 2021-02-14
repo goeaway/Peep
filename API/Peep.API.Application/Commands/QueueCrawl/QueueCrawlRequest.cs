@@ -6,9 +6,9 @@ namespace Peep.API.Application.Commands.QueueCrawl
 {
     public class QueueCrawlRequest : IRequest<QueueCrawlResponseDTO>
     {
-        public CrawlJob Job { get; set; }
+        public StoppableCrawlJob Job { get; set; }
 
-        public QueueCrawlRequest(CrawlJob job)
+        public QueueCrawlRequest(StoppableCrawlJob job)
         {
             Job = job;
         }

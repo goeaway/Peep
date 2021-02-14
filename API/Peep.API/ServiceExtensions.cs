@@ -5,6 +5,8 @@ using Peep.API.Application.Providers;
 using Serilog;
 using System;
 using System.IO;
+using Peep.Core;
+using Peep.Core.API.Providers;
 
 namespace Peep.API
 {
@@ -24,7 +26,7 @@ namespace Peep.API
 
         public static IServiceCollection AddCrawler(this IServiceCollection services)
         {
-            services.AddTransient<ICrawler, Crawler>();
+            services.AddTransient<ICrawler, DistributedCrawler>();
             return services;
         }
 

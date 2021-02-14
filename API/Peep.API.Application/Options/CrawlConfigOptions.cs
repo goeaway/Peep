@@ -8,5 +8,6 @@ namespace Peep.API.Application.Options
     {
         public const string Key = "Crawl";
         public int ProgressUpdateMilliseconds { get; set; }
+            = 1000;
     }
 }

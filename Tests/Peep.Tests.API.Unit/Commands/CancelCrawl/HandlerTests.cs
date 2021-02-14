@@ -1,10 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Peep.API.Application.Commands.CancelQueuedCrawl;
-using Peep.API.Application.Exceptions;
 using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
-using Peep.Tests.Core;
+using Peep.Core.API.Exceptions;
+using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;

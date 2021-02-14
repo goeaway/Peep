@@ -7,7 +7,6 @@
   <ItemGroup>
     <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="5.0.0" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
-    <PackageReference Include="FluentValidation" Version="9.5.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="9.5.0" />
     <PackageReference Include="MediatR" Version="9.0.0" />
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="9.0.0" />
@@ -23,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Peep.Core\Peep.Core.csproj" />
+    <ProjectReference Include="..\..\Core\Peep\Peep.csproj" />
     <ProjectReference Include="..\Peep.API.Models\Peep.API.Models.csproj" />
     <ProjectReference Include="..\Peep.API.Application\Peep.API.Application.csproj" />
   </ItemGroup>

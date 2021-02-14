@@ -2,9 +2,9 @@
 using Newtonsoft.Json;
 using Peep.API.Application.Commands.QueueCrawl;
 using Peep.API.Application.Providers;
-using Peep.Core;
-using Peep.Core.StopConditions;
-using Peep.Tests.Core;
+using Peep.Core.API.Providers;
+using Peep.StopConditions;
+using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +21,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
         [TestMethod]
         public async Task Returns_Response_With_Id()
         {
-            var job = new CrawlJob();
+            var job = new StoppableCrawlJob();
             var request = new QueueCrawlRequest(job);
 
             using var context = Setup.CreateContext();
@@ -38,7 +38,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
         [TestMethod]
         public async Task Adds_Entry_To_Db_With_Job_With_Id_And_Queue_Date()
         {
-            var job = new CrawlJob();
+            var job = new StoppableCrawlJob();
             var request = new QueueCrawlRequest(job);
 
             using var context = Setup.CreateContext();
@@ -59,7 +59,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
         [TestMethod]
         public async Task Adds_Max_Crawl_Stop_Condition()
         {
-            var job = new CrawlJob();
+            var job = new StoppableCrawlJob();
             var request = new QueueCrawlRequest(job);
 
             using var context = Setup.CreateContext();
@@ -72,7 +72,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
 
             var saved = context.QueuedJobs.Find(response.CrawlId);
 
-            var savedJob = JsonConvert.DeserializeObject<CrawlJob>(saved.JobJson);
+            var savedJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(saved.JobJson);
 
             var savedStopCondition = 
                 savedJob
@@ -85,7 +85,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
         [TestMethod]
         public async Task Adds_Max_Duration_Stop_Condition()
         {
-            var job = new CrawlJob();
+            var job = new StoppableCrawlJob();
             var request = new QueueCrawlRequest(job);
 
             using var context = Setup.CreateContext();
@@ -98,7 +98,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
 
             var saved = context.QueuedJobs.Find(response.CrawlId);
 
-            var savedJob = JsonConvert.DeserializeObject<CrawlJob>(saved.JobJson);
+            var savedJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(saved.JobJson);
 
             var savedStopCondition =
                 savedJob

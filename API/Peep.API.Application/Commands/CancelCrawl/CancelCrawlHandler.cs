@@ -1,8 +1,8 @@
 ﻿using MediatR;
-using Peep.API.Application.Exceptions;
 using Peep.API.Application.Providers;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
+using Peep.Core.API.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Net;

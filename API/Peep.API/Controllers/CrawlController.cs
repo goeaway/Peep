@@ -31,7 +31,7 @@ namespace Peep.API.Controllers
         }
 
         [HttpPost]
-        public Task<QueueCrawlResponseDTO> Queue(CrawlJob job)
+        public Task<QueueCrawlResponseDTO> Queue(StoppableCrawlJob job)
         {
             return _mediator.Send(new QueueCrawlRequest(job));
         }

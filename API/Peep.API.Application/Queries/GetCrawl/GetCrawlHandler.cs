@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
 using MediatR;
-using Peep.API.Application.Exceptions;
 using Peep.API.Application.Providers;
-using Peep.API.Application.Services;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
+using Peep.Core.API.Exceptions;
 using System.Threading;
 using System.Threading.Tasks;
 

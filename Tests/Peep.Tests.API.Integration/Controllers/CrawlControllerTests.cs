@@ -2,11 +2,9 @@
 using Moq;
 using Newtonsoft.Json;
 using Peep.API.Application.Providers;
-using Peep.API.Application.Services;
 using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
-using Peep.Core;
-using Peep.Tests.Core;
+using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +23,7 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             var (_, client) = Setup.CreateServer();
 
-            var job = new CrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
@@ -49,7 +47,7 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             var (_, client) = Setup.CreateServer();
 
-            var job = new CrawlJob();
+            var job = new StoppableCrawlJob();
 
             var requestContent = new StringContent(JsonConvert.SerializeObject(job), Encoding.UTF8, "application/json");
 

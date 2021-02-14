@@ -1,7 +1,6 @@
 ﻿using FluentValidation.TestHelper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Peep.API.Application.Commands.QueueCrawl;
-using Peep.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +27,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
         [TestMethod]
         public void Fails_When_Jobs_Seeds_Null()
         {
-            var job = new CrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = null
             };
@@ -43,7 +42,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
         [TestMethod]
         public void Fails_When_Jobs_Seeds_Empty()
         {
-            var job = new CrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>()
             };
@@ -58,7 +57,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
         [TestMethod]
         public void Passes_When_Jobs_Seeds_Has_One()
         {
-            var job = new CrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {

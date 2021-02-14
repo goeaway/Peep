@@ -2,19 +2,16 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json;
-using Peep.API.Application.Exceptions;
 using Peep.API.Application.Providers;
 using Peep.API.Application.Queries.GetCrawl;
-using Peep.API.Application.Services;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Models.Mappings;
-using Peep.Core;
-using Peep.Tests.Core;
+using Peep.Core.API.Exceptions;
+using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -100,7 +97,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             context.QueuedJobs.Add(new QueuedJob
             {
                 Id = ID,
-                JobJson = JsonConvert.SerializeObject(new CrawlJob()),
+                JobJson = JsonConvert.SerializeObject(new StoppableCrawlJob()),
                 DateQueued = DATE_QUEUED
             });
 
@@ -153,7 +150,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
                     new RunningJob
                     {
                         Id = ID,
-                        JobJson = JsonConvert.SerializeObject(new CrawlJob()),
+                        JobJson = JsonConvert.SerializeObject(new StoppableCrawlJob()),
                         DateQueued = DATE_QUEUED,
                         DateStarted = DATE_STARTED,
                         DataJson = DATA_JSON,

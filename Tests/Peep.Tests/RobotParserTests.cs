@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
+using Peep.Robots;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
