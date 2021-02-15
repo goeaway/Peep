@@ -11,6 +11,10 @@ using Peep.Exceptions;
 using Peep.Crawler.Application.Options;
 using Peep.Crawler.Application.Providers;
 using Serilog;
+using Peep.Crawler.Infrastructure;
+using Peep.Crawler.Models.DTOs;
+using Peep.Queueing;
+using Peep.Filtering;
 
 namespace Peep.Crawler.Application.Services
 {
@@ -21,6 +25,9 @@ namespace Peep.Crawler.Application.Services
         private INowProvider _nowProvider;
         private CrawlConfigOptions _options;
         private ICrawlCancellationTokenProvider _tokenProvider;
+        private IGenericRepository<CrawlDataDTO> _crawlDataRepository;
+        private ICrawlFilter _filter;
+        private ICrawlQueue _queue;
 
         private readonly IServiceProvider _serviceProvider;
 
@@ -31,17 +38,23 @@ namespace Peep.Crawler.Application.Services
         }
 
         public CrawlerRunnerService(
+            CrawlConfigOptions options,
             ILogger logger,
             ICrawler crawler,
             INowProvider nowProvider,
-            CrawlConfigOptions options,
-            ICrawlCancellationTokenProvider tokenProvider)
+            ICrawlFilter filter,
+            ICrawlQueue queue,
+            ICrawlCancellationTokenProvider tokenProvider,
+            IGenericRepository<CrawlDataDTO> crawlDataRepository)
         {
             _logger = logger;
             _crawler = crawler;
             _nowProvider = nowProvider;
             _options = options;
             _tokenProvider = tokenProvider;
+            _crawlDataRepository = crawlDataRepository;
+            _filter = filter;
+            _queue = queue;
         }
 
         private IServiceScope SetServices(IServiceScope serviceScope)
@@ -53,9 +66,17 @@ namespace Peep.Crawler.Application.Services
                 _nowProvider = serviceScope.ServiceProvider.GetRequiredService<INowProvider>();
                 _options = serviceScope.ServiceProvider.GetRequiredService<CrawlConfigOptions>();
                 _tokenProvider = serviceScope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
+                _filter = serviceScope.ServiceProvider.GetRequiredService<ICrawlFilter>();
+                _queue = serviceScope.ServiceProvider.GetRequiredService<ICrawlQueue>();
+                _crawlDataRepository = serviceScope.ServiceProvider.GetRequiredService<IGenericRepository<CrawlDataDTO>>();
             }
             
             return serviceScope;
+        }
+
+        private string KeyGenerator(string jobId)
+        {
+            return $"{jobId}.{Guid.NewGuid()}";
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -71,7 +92,7 @@ namespace Peep.Crawler.Application.Services
                 if (jobFound)
                 {
                     // enrich logs in here with job id
-                    var crawlJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(null);
+                    var crawlJob = JsonConvert.DeserializeObject<CrawlJob>(null);
 
                     var startTime = _nowProvider.Now;
 
@@ -80,90 +101,62 @@ namespace Peep.Crawler.Application.Services
                     var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
                         stoppingToken,
                         _tokenProvider.GetToken(null));
-                    
+
                     try
                     {
                         var channelReader = _crawler.Crawl(
                             crawlJob,
                             TimeSpan.FromMilliseconds(_options.ProgressUpdateMilliseconds),
+                            _filter,
+                            _queue,
                             cancellationTokenSource.Token);
 
-                        // async iterate over channel's results
-                        // update the running jobs running totals of the crawl result
-                        await foreach (var result in channelReader.ReadAllAsync(cancellationTokenSource.Token))
+                        try
                         {
-                            // find running in cache
-                            //var rJ = await _runningCrawlJobRepository.GetRunningJob(queuedJob.Id);
-
-                            //// update values
-                            //rJ.DataJson = JsonConvert.SerializeObject(result.Data);
-
-                            //// save 
-                            //await _runningCrawlJobRepository.SaveJob(rJ);
+                            // async iterate over channel's results
+                            // update the running jobs running totals of the crawl result
+                            await foreach (var result in channelReader.ReadAllAsync(cancellationTokenSource.Token))
+                            {
+                                // create a unique key for each push, the crawler manager will then combine all 
+                                // data pushes for the same job together when the crawl is completed
+                                await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                                {
+                                    Count = result.Data.Count,
+                                    Data = result.Data
+                                });
+                            }
+                        }
+                        catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException) // cancellation token for channel reader causes this
+                        {
+                            // occurs when cancellation occurs, so we can ignore and treat as normal
                         }
 
-                        _logger.Information("Saving result");
-
-                        //_context.CompletedJobs.Add(new CompletedJob
-                        //{
-                        //    JobJson = queuedJob.JobJson,
-                        //    Id = queuedJob.Id,
-                        //    CrawlCount = runningJob.CrawlCount,
-                        //    DataJson = runningJob.DataJson,
-                        //    Duration = runningJob.Duration,
-                        //    DateQueued = queuedJob.DateQueued,
-                        //    DateStarted = startTime,
-                        //    DateCompleted = _nowProvider.Now,
-                        //});
-                    }
-                    catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException) // cancellation token for channel reader causes this
-                    {
-                        //var runningJob = await _runningCrawlJobRepository.GetRunningJob(queuedJob.Id);
-
-                        //// build a completed job record based off the running job values
-                        //_context.CompletedJobs.Add(new CompletedJob
-                        //{
-                        //    JobJson = queuedJob.JobJson,
-                        //    Id = queuedJob.Id,
-                        //    CrawlCount = runningJob.CrawlCount,
-                        //    DataJson = runningJob.DataJson,
-                        //    Duration = runningJob.Duration,
-                        //    DateQueued = queuedJob.DateQueued,
-                        //    DateStarted = startTime,
-                        //    DateCompleted = _nowProvider.Now,
-                        //});
+                        // send EOC data push to show this crawler is complete
+                        await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                        {
+                            Complete = true
+                        });
                     }
                     catch (CrawlerRunException e)
                     {
-                        //_context.ErroredJobs.Add(new ErroredJob
-                        //{
-                        //    Id = queuedJob.Id,
-                        //    ErrorMessage = e.Message,
-                        //    JobJson = queuedJob.JobJson,
-                        //    DateStarted = startTime,
-                        //    DateCompleted = _nowProvider.Now,
-                        //    DateQueued = queuedJob.DateQueued,
-                        //    DataJson = JsonConvert.SerializeObject(e.CrawlProgress.Data),
-                        //});
+                        await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                        {
+                            Complete = true,
+                            Data = e.CrawlProgress.Data,
+                            ErrorMessage = e.Message
+                        });
                     }
                     catch (Exception e)
                     {
-                        //_context.ErroredJobs.Add(new ErroredJob
-                        //{
-                        //    Id = queuedJob.Id,
-                        //    ErrorMessage = e.Message,
-                        //    JobJson = queuedJob.JobJson,
-                        //    DateStarted = startTime,
-                        //    DateCompleted = _nowProvider.Now,
-                        //    DateQueued = queuedJob.DateQueued,
-                        //});
+                        await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                        {
+                            Complete = true,
+                            ErrorMessage = e.Message
+                        });
                     }
                     finally
                     {
-                        //await _runningCrawlJobRepository.RemoveJob(queuedJob.Id);
-                        //_tokenProvider.DisposeOfToken(queuedJob.Id);
-
-                        //_context.SaveChanges();
+                        _tokenProvider.DisposeOfToken(null);
                     }
                 }
 

@@ -19,13 +19,7 @@ namespace Peep
     {
         private readonly CrawlerOptions _crawlerOptions;
 
-        private static readonly CrawlerOptions DefaultCrawlerOptions = new CrawlerOptions
-        {
-            Filter = new BloomFilter(1_000_000),
-            Queue = new CrawlQueue()
-        };
-
-        public DistributedCrawler() : this(DefaultCrawlerOptions) { }
+        public DistributedCrawler() : this(new CrawlerOptions()) { }
 
         public DistributedCrawler(CrawlerOptions options)
         {
@@ -45,19 +39,14 @@ namespace Peep
             {
                 throw new CrawlerOptionsException("Robot Parser required");
             }
-
-            if(options.Filter == null)
-            {
-                throw new CrawlerOptionsException("Filter required");
-            }
-
-            if(options.Queue == null)
-            {
-                throw new CrawlerOptionsException("Queue required");
-            }
         }
 
-        public ChannelReader<CrawlProgress> Crawl(CrawlJob job, TimeSpan channelUpdateTimeSpan, CancellationToken cancellationToken)
+        public ChannelReader<CrawlProgress> Crawl(
+            CrawlJob job, 
+            TimeSpan channelUpdateTimeSpan, 
+            ICrawlFilter filter,
+            ICrawlQueue queue,
+            CancellationToken cancellationToken)
         {
             if(job == null)
             {
@@ -67,6 +56,16 @@ namespace Peep
             if (job.Seeds?.Count() == 0)
             {
                 throw new InvalidOperationException("at least one seed URI is required");
+            }
+
+            if(filter == null)
+            {
+                throw new ArgumentNullException(nameof(filter));
+            }
+
+            if(queue == null)
+            {
+                throw new ArgumentNullException(nameof(queue));
             }
 
             var channel = Channel.CreateUnbounded<CrawlProgress>(new UnboundedChannelOptions 
@@ -95,6 +94,8 @@ namespace Peep
                             data,
                             browserAdapter,
                             userAgent,
+                            filter,
+                            queue,
                             cancellationToken,
                             channel.Writer, 
                             channelUpdateTimeSpan);
@@ -121,6 +122,8 @@ namespace Peep
             Dictionary<Uri, IEnumerable<string>> data,
             IBrowserAdapter browserAdapter, 
             string userAgent,
+            ICrawlFilter filter,
+            ICrawlQueue queue,
             CancellationToken cancellationToken,
             ChannelWriter<CrawlProgress> channelWriter = null,
             TimeSpan channelWriterUpdateTime = default)
@@ -146,7 +149,7 @@ namespace Peep
                 }
 
                 // get next uri, if this returns null we will retry using the retry policy
-                var next = await queueEmptyRetryPolicy.ExecuteAsync(cT => _crawlerOptions.Queue.Dequeue(), cancellationToken);
+                var next = await queueEmptyRetryPolicy.ExecuteAsync(cT => queue.Dequeue(), cancellationToken);
 
                 // after a certain amount of retries the policy will just allow through anyway, we then handle below
                 if (next == null) 
@@ -163,7 +166,7 @@ namespace Peep
                 }
 
                 // if filter contains next already we continue
-                if (await _crawlerOptions.Filter.Contains(next.AbsoluteUri))
+                if (await filter.Contains(next.AbsoluteUri))
                 {
                     continue;
                 }
@@ -172,7 +175,7 @@ namespace Peep
 
                 if(response && !cancellationToken.IsCancellationRequested)
                 {
-                    await _crawlerOptions.Filter.Add(next.AbsoluteUri);
+                    await filter.Add(next.AbsoluteUri);
 
                     // perform any page actions to get the page in a certain state before extracting content
                     if(job.PageActions != null && job.PageActions.Any())
@@ -198,6 +201,8 @@ namespace Peep
                         data,
                         job,
                         userAgent,
+                        filter,
+                        queue,
                         cancellationToken
                     );
                 }
@@ -210,6 +215,8 @@ namespace Peep
             Dictionary<Uri, IEnumerable<string>> data,
             CrawlJob job,
             string userAgent,
+            ICrawlFilter filter,
+            ICrawlQueue queue,
             CancellationToken cancellationToken)
         {
             var primedNext = !currentUri.AbsolutePath.EndsWith("/")
@@ -228,10 +235,10 @@ namespace Peep
                 // must not be blocked by robots.txt
                 if (link.Host == currentUri.Host
                     && (string.IsNullOrWhiteSpace(job.UriRegex) ? link.AbsolutePath.Contains(primedNext) : Regex.IsMatch(link.AbsoluteUri, job.UriRegex))
-                    && !await _crawlerOptions.Filter.Contains(link.AbsoluteUri)
+                    && !await filter.Contains(link.AbsoluteUri)
                     && (job.IgnoreRobots || !await _crawlerOptions.RobotParser.UriForbidden(link, userAgent)))
                 {
-                    await _crawlerOptions.Queue.Enqueue(link);
+                    await queue.Enqueue(link);
                 }
             }
 

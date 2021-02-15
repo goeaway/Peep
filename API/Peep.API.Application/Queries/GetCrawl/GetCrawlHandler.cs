@@ -13,16 +13,13 @@ namespace Peep.API.Application.Queries.GetCrawl
     {
         private readonly PeepApiContext _context;
         private readonly IMapper _mapper;
-        private readonly IRunningCrawlJobProvider _runningCrawlJobRepository;
 
         public GetCrawlHandler(
             PeepApiContext context, 
-            IMapper mapper,
-            IRunningCrawlJobProvider runningCrawlJobRepository)
+            IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
-            _runningCrawlJobRepository = runningCrawlJobRepository;
         }
 
         public async Task<GetCrawlResponseDTO> Handle(GetCrawlRequest request, CancellationToken cancellationToken)
@@ -35,11 +32,11 @@ namespace Peep.API.Application.Queries.GetCrawl
             }
 
             // check for running
-            var foundRunning = await _runningCrawlJobRepository.GetRunningJob(request.CrawlId);
-            if(foundRunning != null)
-            {
-                return _mapper.Map<GetCrawlResponseDTO>(foundRunning);
-            }
+            //var foundRunning = await _runningCrawlJobRepository.GetRunningJob(request.CrawlId);
+            //if(foundRunning != null)
+            //{
+            //    return _mapper.Map<GetCrawlResponseDTO>(foundRunning);
+            //}
 
             // check completed table
             var foundCompleted = await _context.CompletedJobs.FindAsync(request.CrawlId);
@@ -48,13 +45,6 @@ namespace Peep.API.Application.Queries.GetCrawl
                 return _mapper.Map<GetCrawlResponseDTO>(foundCompleted);
             }
             
-            // check errored table
-            var foundErrored = await _context.ErroredJobs.FindAsync(request.CrawlId);
-            if(foundErrored != null)
-            {
-                return _mapper.Map<GetCrawlResponseDTO>(foundErrored);
-            }
-
             // throw that it's not found
             throw new RequestFailedException("Crawl job not found", System.Net.HttpStatusCode.NotFound);
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
@@ -8,7 +9,6 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Peep.API.Application.Options;
 using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
 using Peep.API.Persistence;
@@ -21,13 +21,10 @@ namespace Peep.API.Application.Services
 {
     public class CrawlerManagerService : BackgroundService
     {
-        private ILogger _logger;
-        private ICrawler _crawler;
-        private INowProvider _nowProvider;
         private PeepApiContext _context;
-        private CrawlConfigOptions _options;
-        private ICrawlCancellationTokenProvider _tokenProvider;
-        private IRunningCrawlJobProvider _runningCrawlJobRepository;
+        private ILogger _logger;
+        private INowProvider _nowProvider;
+        private ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
 
         private readonly IServiceProvider _serviceProvider;
 
@@ -40,34 +37,13 @@ namespace Peep.API.Application.Services
         public CrawlerManagerService(
             PeepApiContext context,
             ILogger logger,
-            ICrawler crawler,
             INowProvider nowProvider,
-            CrawlConfigOptions options,
-            ICrawlCancellationTokenProvider tokenProvider,
-            IRunningCrawlJobProvider runningCrawlJobRepository)
+            ICrawlCancellationTokenProvider crawlCancellationTokenProvider)
         {
-            _context = context;
             _logger = logger;
-            _crawler = crawler;
+            _context = context;
             _nowProvider = nowProvider;
-            _options = options;
-            _tokenProvider = tokenProvider;
-            _runningCrawlJobRepository = runningCrawlJobRepository;
-        }
-
-        private bool TryGetJob(out QueuedJob job)
-        {
-            if (_context.QueuedJobs.Any())
-            {
-                job = _context.QueuedJobs.OrderBy(qj => qj.DateQueued).First();
-
-                _context.QueuedJobs.Remove(job);
-                _context.SaveChanges();
-                return true;
-            }
-
-            job = null;
-            return false;
+            _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
         }
 
         private IServiceScope SetServices(IServiceScope serviceScope)
@@ -75,15 +51,28 @@ namespace Peep.API.Application.Services
             if(serviceScope != null)
             {
                 _logger = serviceScope.ServiceProvider.GetRequiredService<ILogger>();
-                _crawler = serviceScope.ServiceProvider.GetRequiredService<ICrawler>();
                 _nowProvider = serviceScope.ServiceProvider.GetRequiredService<INowProvider>();
                 _context = serviceScope.ServiceProvider.GetRequiredService<PeepApiContext>();
-                _options = serviceScope.ServiceProvider.GetRequiredService<CrawlConfigOptions>();
-                _tokenProvider = serviceScope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
-                _runningCrawlJobRepository = serviceScope.ServiceProvider.GetRequiredService<IRunningCrawlJobProvider>();
+                _crawlCancellationTokenProvider = serviceScope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
             }
             
             return serviceScope;
+        }
+
+        private bool TryGetJob(out QueuedJob job)
+        {
+            if (_context.QueuedJobs.Any()) 
+            {
+                job = _context.QueuedJobs.OrderBy(qj => qj.DateQueued).First();
+
+                _context.QueuedJobs.Remove(job);
+                _context.SaveChanges();
+
+                return true;
+            }
+
+            job = null;
+            return false;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -93,121 +82,62 @@ namespace Peep.API.Application.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                // try get job from repository
-                var jobFound = TryGetJob(out var queuedJob);
+                // check for job
+                var foundJob = TryGetJob(out var job);
 
-                if (jobFound)
+                if(foundJob)
                 {
-                    await _runningCrawlJobRepository.SaveJob(new RunningJob
+                    var duration = new Stopwatch();
+                    duration.Start();
+
+                    var crawlJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(job.JobJson);
+                    // add job seeds to queue
+                    // broadcast job start to crawlers
+
+                    // go into loop checking for job result + cancellation
+                    var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+                        stoppingToken, _crawlCancellationTokenProvider.GetToken(job.Id));
+
+                    while(!combinedCancellationTokenSource.IsCancellationRequested)
                     {
-                        Id = queuedJob.Id,
-                        JobJson = queuedJob.JobJson,
-                        DateQueued = queuedJob.DateQueued,
-                        DateStarted = _nowProvider.Now,
-                    });
-
-                    // enrich logs in here with job id
-                    _logger.Information("Running job {Id}", queuedJob.Id);
-                    var crawlJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(queuedJob.JobJson);
-
-                    var startTime = _nowProvider.Now;
-
-                    // create a linked token source so we can stop the crawl if the service needs to stop
-                    // or the job needs to stop
-                    var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
-                        stoppingToken,
-                        _tokenProvider.GetToken(queuedJob.Id));
-                    
-                    try
-                    {
-                        var channelReader = _crawler.Crawl(
-                            crawlJob,
-                            TimeSpan.FromMilliseconds(_options.ProgressUpdateMilliseconds),
-                            cancellationTokenSource.Token);
-
-                        // async iterate over channel's results
-                        // update the running jobs running totals of the crawl result
-                        await foreach (var result in channelReader.ReadAllAsync(cancellationTokenSource.Token))
+                        // assess duration, crawl count from filter
+                        // and total data (crawlers should provide easily accessible count of data in each 
+                        // push, so we can aggregate easier without having to serialise the data here each time)
+                        // check that info against stop conditions
+                        // if crawl should stop by stop condition, set the token source here
+                        var result = new CrawlResult
                         {
-                            // find running in cache
-                            var rJ = await _runningCrawlJobRepository.GetRunningJob(queuedJob.Id);
+                            CrawlCount = 1,
+                            Duration = duration.Elapsed,
+                        };
 
-                            // update values
-                            rJ.DataJson = JsonConvert.SerializeObject(result.Data);
-
-                            // save 
-                            await _runningCrawlJobRepository.SaveJob(rJ);
+                        foreach(var stopCondition in crawlJob.StopConditions)
+                        {
+                            if(stopCondition.Stop(result))
+                            {
+                                combinedCancellationTokenSource.Cancel();
+                                break;
+                            }
                         }
 
-                        _logger.Information("Saving result");
+                        await Task.Delay(1000);
+                    }
 
-                        var runningJob = await _runningCrawlJobRepository.GetRunningJob(queuedJob.Id);
+                    // the only way to be here is if the token source is cancelled
+                    // so broadcast cancellation to crawlers
+                    // give crawlers a chance to finish up and respond somehow (maybe an EOF push in the data cache?)
 
-                        // build a completed job record based off the running job values
-                        _context.CompletedJobs.Add(new CompletedJob
-                        {
-                            JobJson = queuedJob.JobJson,
-                            Id = queuedJob.Id,
-                            CrawlCount = runningJob.CrawlCount,
-                            DataJson = runningJob.DataJson,
-                            Duration = runningJob.Duration,
-                            DateQueued = queuedJob.DateQueued,
-                            DateStarted = startTime,
-                            DateCompleted = _nowProvider.Now,
-                        });
-                    }
-                    catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException) // cancellation token for channel reader causes this
-                    {
-                        var runningJob = await _runningCrawlJobRepository.GetRunningJob(queuedJob.Id);
+                    // crawlers will have placed their found data in cache as events
+                    // we should gather them all up for the finished data set
 
-                        // build a completed job record based off the running job values
-                        _context.CompletedJobs.Add(new CompletedJob
-                        {
-                            JobJson = queuedJob.JobJson,
-                            Id = queuedJob.Id,
-                            CrawlCount = runningJob.CrawlCount,
-                            DataJson = runningJob.DataJson,
-                            Duration = runningJob.Duration,
-                            DateQueued = queuedJob.DateQueued,
-                            DateStarted = startTime,
-                            DateCompleted = _nowProvider.Now,
-                        });
-                    }
-                    catch (CrawlerRunException e)
-                    {
-                        _context.ErroredJobs.Add(new ErroredJob
-                        {
-                            Id = queuedJob.Id,
-                            ErrorMessage = e.Message,
-                            JobJson = queuedJob.JobJson,
-                            DateStarted = startTime,
-                            DateCompleted = _nowProvider.Now,
-                            DateQueued = queuedJob.DateQueued,
-                            DataJson = JsonConvert.SerializeObject(e.CrawlProgress.Data),
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        _context.ErroredJobs.Add(new ErroredJob
-                        {
-                            Id = queuedJob.Id,
-                            ErrorMessage = e.Message,
-                            JobJson = queuedJob.JobJson,
-                            DateStarted = startTime,
-                            DateCompleted = _nowProvider.Now,
-                            DateQueued = queuedJob.DateQueued,
-                        });
-                    }
-                    finally
-                    {
-                        await _runningCrawlJobRepository.RemoveJob(queuedJob.Id);
-                        _tokenProvider.DisposeOfToken(queuedJob.Id);
-
-                        _context.SaveChanges();
-                    }
+                    // create and save completed job with data
+                    // clear cache of data, queue, filter
+                    // + any error reporting if required
+                } 
+                else
+                {
+                    await Task.Delay(1000, stoppingToken);
                 }
-
-                await Task.Delay(1000, stoppingToken);
             }
         }
     }

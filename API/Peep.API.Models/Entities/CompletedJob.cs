@@ -14,5 +14,6 @@ namespace Peep.API.Models.Entities
         public DateTime DateCompleted { get; set; }
         public int CrawlCount { get; set; }
         public TimeSpan Duration { get; set; }
+        public string Errors { get; set; }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Peep.Filtering;
+using Peep.Queueing;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -16,6 +18,11 @@ namespace Peep
         /// <param name="channelUpdateTimeSpan">a time interval that represents how often the crawler should write progress to the channel</param>
         /// <param name="cancellationToken">A cancellation token that the crawler will check throughout the crawl</param>
         /// <returns></returns>
-        ChannelReader<CrawlProgress> Crawl(CrawlJob job, TimeSpan channelUpdateTimeSpan, CancellationToken cancellationToken);
+        ChannelReader<CrawlProgress> Crawl(
+            CrawlJob job, 
+            TimeSpan channelUpdateTimeSpan, 
+            ICrawlFilter filter,
+            ICrawlQueue queue,
+            CancellationToken cancellationToken);
     }
 }

@@ -56,12 +56,10 @@ namespace Peep.API
             services.AddDbContext<PeepApiContext>(
                 options => options.UseInMemoryDatabase("PeepApiDatabase"));
 
-            services.AddCrawlConfigOptions(Configuration);
             services.AddCrawler();
             services.AddLogger();
             services.AddCrawlCancellationTokenProvider();
             services.AddNowProvider();
-            services.AddRunningCrawlJobProvider();
             services.AddAutoMapper(typeof(QueuedJob));
             services.AddDistributedMemoryCache();
         }

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Peep.API.Application.Providers;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;

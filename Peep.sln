@@ -39,6 +39,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Core.API", "Core\Peep.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.Crawler.API.Unit", "Tests\Peep.Tests.Crawler.API.Unit\Peep.Tests.Crawler.API.Unit.csproj", "{6EBE44DA-6B38-4B2D-8FF4-C33819E29C38}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peep.Crawler.Infrastructure", "Crawler\Peep.Crawler.Infrastructure\Peep.Crawler.Infrastructure.csproj", "{0C9FD30B-8EB5-46C0-987C-DCEA19F63BB6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,10 @@ Global
 		{6EBE44DA-6B38-4B2D-8FF4-C33819E29C38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6EBE44DA-6B38-4B2D-8FF4-C33819E29C38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6EBE44DA-6B38-4B2D-8FF4-C33819E29C38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C9FD30B-8EB5-46C0-987C-DCEA19F63BB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C9FD30B-8EB5-46C0-987C-DCEA19F63BB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C9FD30B-8EB5-46C0-987C-DCEA19F63BB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C9FD30B-8EB5-46C0-987C-DCEA19F63BB6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -120,6 +126,7 @@ Global
 		{E82BC77A-2CDB-4AF3-9FE7-02A2AE1382E2} = {74E47E51-4C8C-47DA-A0DA-613BC09C885C}
 		{8BD65083-3492-4347-9EE8-E5F46C9BBD93} = {176576F6-D260-4A51-A3B1-CB13E3BD3D14}
 		{6EBE44DA-6B38-4B2D-8FF4-C33819E29C38} = {BE5CF83F-F4FD-404D-AF2A-301C2FD4ED13}
+		{0C9FD30B-8EB5-46C0-987C-DCEA19F63BB6} = {74E47E51-4C8C-47DA-A0DA-613BC09C885C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5987D7B7-0930-40A4-9AEC-8F1700B98701}

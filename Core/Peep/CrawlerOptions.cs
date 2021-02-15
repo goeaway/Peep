@@ -16,8 +16,6 @@ namespace Peep
             = new DataExtractor();
         public IRobotParser RobotParser { get; set; }
             = new RobotParser(new HttpClient());
-        public ICrawlFilter Filter { get; set; }
-        public ICrawlQueue Queue { get; set; }
         public int PageActionRetryCount { get; set; }
             = 3;
         public int QueueEmptyRetryCount { get; set; }
