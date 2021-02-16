@@ -5,35 +5,26 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Peep.Core.API.Providers;
+using System.Collections;
+using System.Collections.Generic;
+using Peep.Crawler.Models;
 
 namespace Peep.Crawler.Application.Commands.QueueCrawl
 {
     public class QueueCrawlHandler : IRequestHandler<QueueCrawlRequest, QueueCrawlResponseDTO>
     {
-        private readonly INowProvider _nowProvider;
+        private readonly IJobQueue _jobQueue;
 
-        public QueueCrawlHandler(INowProvider nowProvider)
+        public QueueCrawlHandler(IJobQueue jobQueue)
         {
-            _nowProvider = nowProvider;
+            _jobQueue = jobQueue;
         }
 
-        public async Task<QueueCrawlResponseDTO> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
+        public Task<QueueCrawlResponseDTO> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
         {
-            //var queuedJob = new QueuedJob
-            //{
-            //    JobJson = JsonConvert.SerializeObject(request.Job),
-            //    DateQueued = _nowProvider.Now,
-            //    Id = Guid.NewGuid().ToString()
-            //};
+            _jobQueue.Enqueue(request.Job);
 
-            //_context.QueuedJobs.Add(queuedJob);
-
-            //await _context.SaveChangesAsync();
-
-            return new QueueCrawlResponseDTO
-            {
-                CrawlId = ""
-            };
+            return Task.FromResult(new QueueCrawlResponseDTO());
         }
     }
 }

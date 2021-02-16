@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Peep.API.Application.Providers;
 using Serilog;
 using System;
 using System.IO;
 using Peep.Core;
 using Peep.Core.API.Providers;
-using Peep.API.Application.Options;
+using Peep.Crawler.Options;
 
-namespace Peep.API
+namespace Peep.Crawler
 {
     public static class ServiceExtensions
     {
@@ -24,15 +23,15 @@ namespace Peep.API
             return services;
         }
 
+        public static IServiceCollection AddCrawler(this IServiceCollection services)
+        {
+            services.AddTransient<ICrawler, DistributedCrawler>();
+            return services;
+        }
+
         public static IServiceCollection AddNowProvider(this IServiceCollection services)
         {
             return services.AddTransient<INowProvider, NowProvider>();
-        }
-
-        public static IServiceCollection AddCrawlCancellationTokenProvider(this IServiceCollection services)
-        {
-            services.AddSingleton<ICrawlCancellationTokenProvider>(new CrawlCancellationTokenProvider());
-            return services;
         }
 
         public static IServiceCollection AddMessaging(

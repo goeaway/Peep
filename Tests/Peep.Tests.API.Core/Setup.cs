@@ -22,7 +22,6 @@ namespace Peep.Tests.API.Core
 
         public class CreateServerOptions
         {
-            public IRunningCrawlJobProvider RunningCrawlJobRepository { get; set; }
             public ICrawlCancellationTokenProvider TokenProvider { get; set; }
         }
 
@@ -37,11 +36,6 @@ namespace Peep.Tests.API.Core
                 .UseStartup<Startup>()
                 .ConfigureTestServices(services =>
                 {
-                    if (options.RunningCrawlJobRepository != null)
-                    {
-                        services.AddSingleton(options.RunningCrawlJobRepository);
-                    }
-
                     if (options.TokenProvider != null)
                     {
                         services.AddSingleton(options.TokenProvider);
@@ -66,11 +60,6 @@ namespace Peep.Tests.API.Core
                 {
                     services.AddSingleton(context);
 
-                    if(options.RunningCrawlJobRepository != null)
-                    {
-                        services.AddSingleton(options.RunningCrawlJobRepository);
-                    }
-                    
                     if(options.TokenProvider != null)
                     {
                         services.AddSingleton(options.TokenProvider);

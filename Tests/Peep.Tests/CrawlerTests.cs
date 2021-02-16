@@ -57,32 +57,11 @@ namespace Peep.Tests
         }
 
         [TestMethod]
-        public void Throws_If_CrawlerOptions_Filter_Null()
-        {
-            var options = new CrawlerOptions
-            {
-                Filter = null
-            };
-            Assert.ThrowsException<CrawlerOptionsException>(() => new DistributedCrawler(options));
-        }
-
-        [TestMethod]
-        public void Throws_If_CrawlerOptions_Queue_Null()
-        {
-            var options = new CrawlerOptions
-            {
-                Filter = new BloomFilter(1000),
-                Queue = null
-            };
-            Assert.ThrowsException<CrawlerOptionsException>(() => new DistributedCrawler(options));
-        }
-
-
-        [TestMethod]
         public void Crawl_Throws_If_Options_Null()
         {
             var crawler = new DistributedCrawler();
-            Assert.ThrowsException<ArgumentNullException>(() => crawler.Crawl(null, default, default));
+            Assert.ThrowsException<ArgumentNullException>(
+                () => crawler.Crawl(null, default, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
@@ -90,7 +69,8 @@ namespace Peep.Tests
         {
             var crawler = new DistributedCrawler();
             var JOB = new StoppableCrawlJob();
-            Assert.ThrowsException<InvalidOperationException>(() => crawler.Crawl(JOB, default, default));
+            Assert.ThrowsException<InvalidOperationException>(
+                () => crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
@@ -103,7 +83,39 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler();
             Assert.ThrowsException<InvalidOperationException>(
-                () => crawler.Crawl(JOB, default, default));
+                () => crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(), default));
+        }
+
+        [TestMethod]
+        public void Crawl_Throws_If_Filter_Null()
+        {
+            var JOB = new StoppableCrawlJob
+            {
+                Seeds = new List<Uri>
+                {
+                    new Uri("http://localhost")
+                }
+            };
+
+            var crawler = new DistributedCrawler();
+            Assert.ThrowsException<ArgumentNullException>(
+                () => crawler.Crawl(JOB, default, null, new CrawlQueue(), default));
+        }
+
+        [TestMethod]
+        public void Crawl_Throws_If_Queue_Null()
+        {
+            var JOB = new StoppableCrawlJob
+            {
+                Seeds = new List<Uri>
+                {
+                    new Uri("http://localhost")
+                }
+            };
+
+            var crawler = new DistributedCrawler();
+            Assert.ThrowsException<ArgumentNullException>(
+                () => crawler.Crawl(JOB, default, new BloomFilter(100), null, default));
         }
 
         [TestMethod]
@@ -125,8 +137,6 @@ namespace Peep.Tests
             var options = new CrawlerOptions
             {
                 BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
             };
 
             var crawler = new DistributedCrawler(options);
@@ -134,7 +144,11 @@ namespace Peep.Tests
             var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
-            var result = crawler.Crawl(JOB, default, cancellationTokenSource.Token);
+            var result = crawler.Crawl(JOB, 
+                default, 
+                new BloomFilter(100),
+                new CrawlQueue(JOB.Seeds),
+                cancellationTokenSource.Token);
 
             mockBrowserAdapter.Verify(
                 mock => mock.NavigateToAsync(It.IsAny<Uri>()),
@@ -174,14 +188,17 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(
+                JOB,
+                default,
+                new BloomFilter(100),
+                new CrawlQueue(JOB.Seeds),
+                CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -226,14 +243,17 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(
+                JOB, 
+                default,
+                new BloomFilter(100),
+                new CrawlQueue(JOB.Seeds),
+                CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -278,14 +298,12 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -338,14 +356,12 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -398,14 +414,12 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -458,14 +472,12 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -520,14 +532,12 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -571,14 +581,12 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = new CrawlQueue(JOB.Seeds)
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -625,14 +633,17 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-                Filter = new BloomFilter(100),
-                Queue = mockQueue.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var channelReader = crawler.Crawl(JOB, TimeSpan.FromMilliseconds(10), CANCELLATION_TOKEN_SOURCE.Token);
+            var channelReader = crawler.Crawl(
+                JOB, 
+                TimeSpan.FromMilliseconds(1),
+                new BloomFilter(100),
+                new CrawlQueue(JOB.Seeds),
+                CANCELLATION_TOKEN_SOURCE.Token);
 
             var dataStore = new Dictionary<Uri, IEnumerable<string>>();
 

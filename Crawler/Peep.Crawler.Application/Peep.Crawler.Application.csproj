@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Peep.Core.Api\Peep.Core.API.csproj" />
     <ProjectReference Include="..\..\Core\Peep\Peep.csproj" />
+    <ProjectReference Include="..\Peep.Crawler.Infrastructure\Peep.Crawler.Infrastructure.csproj" />
     <ProjectReference Include="..\Peep.Crawler.Models\Peep.Crawler.Models.csproj" />
   </ItemGroup>
 

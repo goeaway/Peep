@@ -14,6 +14,8 @@ namespace Peep.Crawler.Application.Commands.QueueCrawl
 
             When(x => x.Job != null, () =>
             {
+                RuleFor(x => x.Job.Id).NotEmpty().WithMessage("Job Id required");
+
                 RuleFor(x => x.Job.Seeds)
                     .NotEmpty()
                     .WithMessage("At least 1 seed uri is required");

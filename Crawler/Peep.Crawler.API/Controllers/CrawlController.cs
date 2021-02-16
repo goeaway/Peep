@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Peep.Crawler.Application.Commands.CancelQueuedCrawl;
 using Peep.Crawler.Application.Commands.QueueCrawl;
+using Peep.Crawler.Models;
 using Peep.Crawler.Models.DTOs;
 
 namespace Peep.Crawler.API.Controllers
@@ -19,7 +20,7 @@ namespace Peep.Crawler.API.Controllers
         }
 
         [HttpPost]
-        public Task<QueueCrawlResponseDTO> Queue(CrawlJob job)
+        public Task<QueueCrawlResponseDTO> Queue(IdentifiableCrawlJob job)
         {
             return _mediator.Send(new QueueCrawlRequest(job));
         }

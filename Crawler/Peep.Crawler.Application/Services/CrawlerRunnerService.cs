@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 using Peep.Core.API.Providers;
 using Peep.Exceptions;
 using Peep.Crawler.Application.Options;
 using Peep.Crawler.Application.Providers;
 using Serilog;
-using Peep.Crawler.Infrastructure;
 using Peep.Crawler.Models.DTOs;
 using Peep.Queueing;
 using Peep.Filtering;
+using Peep.Crawler.Models;
+using System.Collections.Concurrent;
 
 namespace Peep.Crawler.Application.Services
 {
@@ -22,12 +21,11 @@ namespace Peep.Crawler.Application.Services
     {
         private ILogger _logger;
         private ICrawler _crawler;
-        private INowProvider _nowProvider;
         private CrawlConfigOptions _options;
         private ICrawlCancellationTokenProvider _tokenProvider;
-        private IGenericRepository<CrawlDataDTO> _crawlDataRepository;
         private ICrawlFilter _filter;
         private ICrawlQueue _queue;
+        private IJobQueue _jobQueue;
 
         private readonly IServiceProvider _serviceProvider;
 
@@ -39,22 +37,20 @@ namespace Peep.Crawler.Application.Services
 
         public CrawlerRunnerService(
             CrawlConfigOptions options,
+            IJobQueue jobQueue,
             ILogger logger,
             ICrawler crawler,
-            INowProvider nowProvider,
             ICrawlFilter filter,
             ICrawlQueue queue,
-            ICrawlCancellationTokenProvider tokenProvider,
-            IGenericRepository<CrawlDataDTO> crawlDataRepository)
+            ICrawlCancellationTokenProvider tokenProvider)
         {
             _logger = logger;
             _crawler = crawler;
-            _nowProvider = nowProvider;
             _options = options;
             _tokenProvider = tokenProvider;
-            _crawlDataRepository = crawlDataRepository;
             _filter = filter;
             _queue = queue;
+            _jobQueue = jobQueue;
         }
 
         private IServiceScope SetServices(IServiceScope serviceScope)
@@ -63,12 +59,11 @@ namespace Peep.Crawler.Application.Services
             {
                 _logger = serviceScope.ServiceProvider.GetRequiredService<ILogger>();
                 _crawler = serviceScope.ServiceProvider.GetRequiredService<ICrawler>();
-                _nowProvider = serviceScope.ServiceProvider.GetRequiredService<INowProvider>();
                 _options = serviceScope.ServiceProvider.GetRequiredService<CrawlConfigOptions>();
                 _tokenProvider = serviceScope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
                 _filter = serviceScope.ServiceProvider.GetRequiredService<ICrawlFilter>();
                 _queue = serviceScope.ServiceProvider.GetRequiredService<ICrawlQueue>();
-                _crawlDataRepository = serviceScope.ServiceProvider.GetRequiredService<IGenericRepository<CrawlDataDTO>>();
+                _jobQueue = serviceScope.ServiceProvider.GetRequiredService<IJobQueue>();
             }
             
             return serviceScope;
@@ -87,25 +82,22 @@ namespace Peep.Crawler.Application.Services
             while (!stoppingToken.IsCancellationRequested)
             {
                 // try get job from repository
-                var jobFound = false;
+                var jobFound = _jobQueue.TryDequeue(out var job);
 
                 if (jobFound)
                 {
                     // enrich logs in here with job id
-                    var crawlJob = JsonConvert.DeserializeObject<CrawlJob>(null);
-
-                    var startTime = _nowProvider.Now;
 
                     // create a linked token source so we can stop the crawl if the service needs to stop
                     // or the job needs to stop
                     var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
                         stoppingToken,
-                        _tokenProvider.GetToken(null));
+                        _tokenProvider.GetToken(job.Id));
 
                     try
                     {
                         var channelReader = _crawler.Crawl(
-                            crawlJob,
+                            job,
                             TimeSpan.FromMilliseconds(_options.ProgressUpdateMilliseconds),
                             _filter,
                             _queue,
@@ -119,7 +111,7 @@ namespace Peep.Crawler.Application.Services
                             {
                                 // create a unique key for each push, the crawler manager will then combine all 
                                 // data pushes for the same job together when the crawl is completed
-                                await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                                await _crawlDataRepository.Set(KeyGenerator(job.Id), new CrawlDataDTO
                                 {
                                     Count = result.Data.Count,
                                     Data = result.Data
@@ -132,23 +124,24 @@ namespace Peep.Crawler.Application.Services
                         }
 
                         // send EOC data push to show this crawler is complete
-                        await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                        await _crawlDataRepository.Set(KeyGenerator(job.Id), new CrawlDataDTO
                         {
                             Complete = true
                         });
                     }
                     catch (CrawlerRunException e)
                     {
-                        await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                        await _crawlDataRepository.Set(KeyGenerator(job.Id), new CrawlDataDTO
                         {
                             Complete = true,
+                            Count = e.CrawlProgress.Data.Count,
                             Data = e.CrawlProgress.Data,
                             ErrorMessage = e.Message
                         });
                     }
                     catch (Exception e)
                     {
-                        await _crawlDataRepository.Set(KeyGenerator(""), new CrawlDataDTO
+                        await _crawlDataRepository.Set(KeyGenerator(job.Id), new CrawlDataDTO
                         {
                             Complete = true,
                             ErrorMessage = e.Message
@@ -156,11 +149,13 @@ namespace Peep.Crawler.Application.Services
                     }
                     finally
                     {
-                        _tokenProvider.DisposeOfToken(null);
+                        _tokenProvider.DisposeOfToken(job.Id);
                     }
                 }
-
-                await Task.Delay(1000, stoppingToken);
+                else
+                {
+                    await Task.Delay(1000, stoppingToken);
+                }
             }
         }
     }

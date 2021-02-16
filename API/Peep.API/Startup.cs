@@ -56,12 +56,13 @@ namespace Peep.API
             services.AddDbContext<PeepApiContext>(
                 options => options.UseInMemoryDatabase("PeepApiDatabase"));
 
-            services.AddCrawler();
             services.AddLogger();
             services.AddCrawlCancellationTokenProvider();
             services.AddNowProvider();
             services.AddAutoMapper(typeof(QueuedJob));
             services.AddDistributedMemoryCache();
+
+            services.AddMessaging(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

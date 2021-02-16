@@ -26,7 +26,6 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             cfg.AddProfile<QueuedJobProfile>();
             cfg.AddProfile<RunningJobProfile>();
             cfg.AddProfile<CompletedJobProfile>();
-            cfg.AddProfile<ErroredJobProfile>();
         }).CreateMapper();
 
         [TestMethod]
@@ -62,9 +61,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockRunningCrawlProvider = new Mock<IRunningCrawlJobProvider>();
-
-            var handler = new GetCrawlHandler(context, CreateMapper(), mockRunningCrawlProvider.Object);
+            var handler = new GetCrawlHandler(context, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -103,9 +100,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockRunningCrawlProvider = new Mock<IRunningCrawlJobProvider>();
-
-            var handler = new GetCrawlHandler(context, CreateMapper(), mockRunningCrawlProvider.Object);
+            var handler = new GetCrawlHandler(context, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -142,24 +137,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             using var context = Setup.CreateContext();
 
-            var mockRunningCrawlProvider = new Mock<IRunningCrawlJobProvider>();
-
-            mockRunningCrawlProvider
-                .Setup(mock => mock.GetRunningJob(ID))
-                .ReturnsAsync(
-                    new RunningJob
-                    {
-                        Id = ID,
-                        JobJson = JsonConvert.SerializeObject(new StoppableCrawlJob()),
-                        DateQueued = DATE_QUEUED,
-                        DateStarted = DATE_STARTED,
-                        DataJson = DATA_JSON,
-                        CrawlCount = CRAWL_COUNT,
-                        Duration = DURATION
-                    }
-                );
-
-            var handler = new GetCrawlHandler(context, CreateMapper(), mockRunningCrawlProvider.Object);
+            var handler = new GetCrawlHandler(context, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -200,23 +178,9 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             using var context = Setup.CreateContext();
 
-            context.ErroredJobs.Add(new ErroredJob
-            {
-                Id = ID,
-                DateQueued = DATE_QUEUED,
-                DateCompleted = DATE_COMPLETED,
-                DateStarted = DATE_STARTED,
-                CrawlCount = CRAWL_COUNT,
-                ErrorMessage = ERROR_MESSAGE,
-                DataJson = DATA_JSON,
-                Duration = DURATION
-            });
-
-            var mockRunningCrawlProvider = new Mock<IRunningCrawlJobProvider>();
-
             context.SaveChanges();
 
-            var handler = new GetCrawlHandler(context, CreateMapper(), mockRunningCrawlProvider.Object);
+            var handler = new GetCrawlHandler(context, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -245,9 +209,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             using var context = Setup.CreateContext();
 
-            var mockRunningCrawlProvider = new Mock<IRunningCrawlJobProvider>();
-
-            var handler = new GetCrawlHandler(context, CreateMapper(), mockRunningCrawlProvider.Object);
+            var handler = new GetCrawlHandler(context, CreateMapper());
 
             await Assert.ThrowsExceptionAsync<RequestFailedException>(
                 () => handler.Handle(request, CancellationToken.None));

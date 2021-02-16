@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -7,8 +8,8 @@ namespace Peep.Crawler.Application.Providers
 {
     public class CrawlCancellationTokenProvider : ICrawlCancellationTokenProvider
     {
-        private readonly Dictionary<string, CancellationTokenSource> _tokenDictionary
-            = new Dictionary<string, CancellationTokenSource>();
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> _tokenDictionary
+            = new ConcurrentDictionary<string, CancellationTokenSource>();
 
         public bool CancelJob(string jobId)
         {
@@ -29,13 +30,18 @@ namespace Peep.Crawler.Application.Providers
             }
 
             var newSource = new CancellationTokenSource();
-            _tokenDictionary.Add(jobId, newSource);
-            return newSource.Token;
+            if(_tokenDictionary.TryAdd(jobId, newSource))
+            {
+                return newSource.Token;
+            }
+
+            // if we got here, call again, one of the above statements WILL be true at some point...
+            return GetToken(jobId);
         }
 
         public bool DisposeOfToken(string jobId)
         {
-            return _tokenDictionary.Remove(jobId);
+            return _tokenDictionary.TryRemove(jobId, out var _);
         }
     }
 }

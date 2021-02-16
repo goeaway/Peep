@@ -9,4 +9,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Peep\Peep.csproj" />
+  </ItemGroup>
+
 </Project>
