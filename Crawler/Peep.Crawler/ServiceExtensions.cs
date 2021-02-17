@@ -42,5 +42,14 @@ namespace Peep.Crawler
             configuration.GetSection(MessagingOptions.Key).Bind(options);
             return services.AddSingleton(options);
         }
+
+        public static IServiceCollection AddCrawlerOptions(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            var options = new CrawlConfigOptions();
+            configuration.GetSection(CrawlConfigOptions.Key).Bind(options);
+            return services.AddSingleton(options);
+        }
     }
 }

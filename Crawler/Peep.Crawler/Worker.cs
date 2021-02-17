@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Peep.Crawler.Application.Options;
 using Peep.Crawler.Options;
 using Peep.Exceptions;
 using Peep.Filtering;

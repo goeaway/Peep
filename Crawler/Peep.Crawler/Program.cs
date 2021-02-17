@@ -21,6 +21,7 @@ namespace Peep.Crawler
                     services.AddLogger();
                     services.AddCrawler();
                     services.AddMessaging(hostContext.Configuration);
+                    services.AddCrawlerOptions(hostContext.Configuration);
                     services.AddHostedService<Worker>();
                 });
     }

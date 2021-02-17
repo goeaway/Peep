@@ -32,11 +32,11 @@ namespace Peep.API.Application.Queries.GetCrawl
             }
 
             // check for running
-            //var foundRunning = await _runningCrawlJobRepository.GetRunningJob(request.CrawlId);
-            //if(foundRunning != null)
-            //{
-            //    return _mapper.Map<GetCrawlResponseDTO>(foundRunning);
-            //}
+            var foundRunning = await _context.RunningJobs.FindAsync(request.CrawlId);
+            if (foundRunning != null)
+            {
+                return _mapper.Map<GetCrawlResponseDTO>(foundRunning);
+            }
 
             // check completed table
             var foundCompleted = await _context.CompletedJobs.FindAsync(request.CrawlId);
