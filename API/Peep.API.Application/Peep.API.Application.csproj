@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Peep.Core.Api\Peep.Core.API.csproj" />
+    <ProjectReference Include="..\..\Core\Peep.Core.API\Peep.Core.API.csproj" />
     <ProjectReference Include="..\..\Core\Peep\Peep.csproj" />
     <ProjectReference Include="..\Peep.API.Models\Peep.API.Models.csproj" />
     <ProjectReference Include="..\Peep.API.Persistence\Peep.API.Persistence.csproj" />

@@ -23,7 +23,10 @@ namespace Peep.API.Models.Mappings
                 .ForMember(
                     dto => dto.State,
                     opt => 
-                        opt.MapFrom(cj => CrawlState.Complete));
+                        opt.MapFrom(cj => string.IsNullOrWhiteSpace(cj.Errors) ? CrawlState.Complete : CrawlState.Error))
+                .ForMember(
+                    dto => dto.ErrorMessage,
+                    opt => opt.MapFrom(cj => cj.Errors));
         }
     }
 }

@@ -1,0 +1,39 @@
+version: "2"
+networks:
+  app_bridge:
+    driver: bridge
+services:
+  api:
+    build: 
+      context: ../..
+      dockerfile: Deploy/API/Dockerfile
+      args:
+        ASPNET_VERSION: 3.1
+        SDK_VERSION: 3.1
+    container_name: peepapi_container
+    ports:
+      - "8080:80"
+    networks:
+      - app_bridge
+    depends_on:
+      - rabbitmq
+
+  crawler:
+    build: 
+      context: ../..
+      dockerfile: Deploy/Crawler/Dockerfile
+      args:
+        ASPNET_VERSION: 3.1
+        SDK_VERSION: 3.1
+    container_name: peepcrawler_container
+    networks:
+      - app_bridge
+    depends_on:
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_container
+    ports:
+      - "5672:5672"
+      - "15672:15672"

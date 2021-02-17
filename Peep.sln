@@ -29,7 +29,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.API.Core", "Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.API.Persistence", "API\Peep.API.Persistence\Peep.API.Persistence.csproj", "{D02A1025-32A3-4EA0-BE6B-7B0495E34B80}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Core.API", "Core\Peep.Core.Api\Peep.Core.API.csproj", "{8BD65083-3492-4347-9EE8-E5F46C9BBD93}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Core.API", "Core\Peep.Core.API\Peep.Core.API.csproj", "{8BD65083-3492-4347-9EE8-E5F46C9BBD93}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.Crawler.API.Unit", "Tests\Peep.Tests.Crawler.API.Unit\Peep.Tests.Crawler.API.Unit.csproj", "{6EBE44DA-6B38-4B2D-8FF4-C33819E29C38}"
 EndProject

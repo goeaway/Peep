@@ -15,6 +15,8 @@ namespace Peep.Crawler
         {
             var loggerConfig = new LoggerConfiguration()
                         .WriteTo
+                            .Console()
+                        .WriteTo
                             .File(
                                 Path.Combine(AppContext.BaseDirectory, "log.txt"),
                                 rollingInterval: RollingInterval.Day);
@@ -34,7 +36,7 @@ namespace Peep.Crawler
             return services.AddTransient<INowProvider, NowProvider>();
         }
 
-        public static IServiceCollection AddMessaging(
+        public static IServiceCollection AddMessagingOptions(
             this IServiceCollection services, 
             IConfiguration configuration)
         {

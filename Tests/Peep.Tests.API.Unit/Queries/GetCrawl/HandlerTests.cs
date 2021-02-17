@@ -137,6 +137,18 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             using var context = Setup.CreateContext();
 
+            context.RunningJobs.Add(new RunningJob
+            {
+                Id = ID,
+                DataJson = DATA_JSON,
+                DateQueued = DATE_QUEUED,
+                DateStarted = DATE_STARTED,
+                CrawlCount = CRAWL_COUNT,
+                Duration = DURATION
+            });
+
+            context.SaveChanges();
+
             var handler = new GetCrawlHandler(context, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
@@ -162,7 +174,6 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
         {
             const string ID = "random id";
             const int CRAWL_COUNT = 2;
-            const string ERROR_MESSAGE = "error message";
             var DATE_QUEUED = new DateTime(2021, 01, 01);
             var DATE_STARTED = new DateTime(2022, 01, 01);
             var DATE_COMPLETED = new DateTime(2023, 01, 01);
@@ -173,10 +184,23 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
                 { new Uri(DATA_FIRST_KEY), new List<string> { DATA_FIRST_VALUE } }
             });
             var DURATION = TimeSpan.FromSeconds(1);
+            var ERRORS = "somthing bad,something else bad";
 
             var request = new GetCrawlRequest(ID);
 
             using var context = Setup.CreateContext();
+
+            context.CompletedJobs.Add(new CompletedJob
+            {
+                Duration = DURATION,
+                DataJson = DATA_JSON,
+                Errors = ERRORS,
+                DateStarted = DATE_STARTED,
+                DateCompleted = DATE_COMPLETED,
+                DateQueued = DATE_QUEUED,
+                CrawlCount = CRAWL_COUNT,
+                Id = ID
+            });
 
             context.SaveChanges();
 
@@ -196,7 +220,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             Assert.AreEqual(DATE_COMPLETED, result.DateCompleted);
             Assert.AreEqual(DATE_STARTED, result.DateStarted);
 
-            Assert.AreEqual(ERROR_MESSAGE, result.ErrorMessage);
+            Assert.AreEqual(ERRORS, result.ErrorMessage);
             Assert.AreEqual(CrawlState.Error, result.State);
         }
 

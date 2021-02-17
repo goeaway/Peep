@@ -9,6 +9,5 @@ namespace Peep.API.Application.Options
         public const string Key = "Messaging";
 
         public string Hostname { get; set; }
-        public string CrawlExchange { get; set; }
     }
 }

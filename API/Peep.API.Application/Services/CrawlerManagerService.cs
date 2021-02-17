@@ -32,6 +32,10 @@ namespace Peep.API.Application.Services
 
         private readonly IServiceProvider _serviceProvider;
 
+        private const string CRAWL_EXCHANGE = "crawlExchange";
+        private const string QUEUE_ROUTING_KEY = "queue";
+        private const string CANCEL_ROUTING_KEY = "cancel";
+
         public CrawlerManagerService(
             IServiceProvider serviceProvider)
         {
@@ -94,6 +98,16 @@ namespace Peep.API.Application.Services
 
                 if(foundJob)
                 {
+                    _context.RunningJobs.Add(new RunningJob
+                    {
+                        Id = job.Id,
+                        JobJson = job.JobJson,
+                        DateQueued = job.DateQueued,
+                        DateStarted = _nowProvider.Now
+                    });
+
+                    _context.SaveChanges();
+
                     var duration = new Stopwatch();
                     duration.Start();
 
@@ -110,14 +124,14 @@ namespace Peep.API.Application.Services
                     using var connection = factory.CreateConnection();
                     using var channel = connection.CreateModel();
 
-                    channel.ExchangeDeclare(_messagingOptions.CrawlExchange, ExchangeType.Fanout);
+                    channel.ExchangeDeclare(CRAWL_EXCHANGE, ExchangeType.Direct);
 
                     var crawlJob = stoppableCrawlJob as CrawlJob;
                     var identifiableCrawlJob = crawlJob as IdentifiableCrawlJob;
                     identifiableCrawlJob.Id = job.Id;
 
                     var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(identifiableCrawlJob));
-                    channel.BasicPublish(_messagingOptions.CrawlExchange, "queue", null, body);
+                    channel.BasicPublish(CRAWL_EXCHANGE, QUEUE_ROUTING_KEY, null, body);
 
                     // go into loop checking for job result + cancellation
                     while (!combinedCancellationTokenSource.IsCancellationRequested)
@@ -150,7 +164,7 @@ namespace Peep.API.Application.Services
                     // so broadcast cancellation to crawlers
                     // give crawlers a chance to finish up and respond somehow (maybe an EOF push in the data cache?)
                     var cancelBody = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(""));
-                    channel.BasicPublish(_messagingOptions.CrawlExchange, "cancel", null, cancelBody);
+                    channel.BasicPublish(CRAWL_EXCHANGE, CANCEL_ROUTING_KEY, null, cancelBody);
 
                     // crawlers will have placed their found data in cache as events
                     // we should gather them all up for the finished data set

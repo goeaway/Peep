@@ -89,7 +89,8 @@ namespace Peep.Crawler
                 while (jobQueue.TryDequeue(out var job)) {
                     cancellationTokenSource = 
                         CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                    await RunJob(job, cancellationTokenSource.Token);
+                    //await RunJob(job, cancellationTokenSource.Token);
+                    await Task.Delay(500, stoppingToken);
                 }
 
                 await Task.Delay(1000, stoppingToken);
