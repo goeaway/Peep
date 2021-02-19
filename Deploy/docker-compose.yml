@@ -5,7 +5,7 @@ networks:
 services:
   api:
     build: 
-      context: ../..
+      context: ..
       dockerfile: Deploy/API/Dockerfile
       args:
         ASPNET_VERSION: 3.1
@@ -17,10 +17,11 @@ services:
       - app_bridge
     depends_on:
       - rabbitmq
+      - redis
 
   crawler:
     build: 
-      context: ../..
+      context: ..
       dockerfile: Deploy/Crawler/Dockerfile
       args:
         ASPNET_VERSION: 3.1
@@ -30,10 +31,16 @@ services:
       - app_bridge
     depends_on:
       - rabbitmq
+      - redis
 
-  rabbitmq:
+  rabbitmq: 
     image: rabbitmq:3-management
     container_name: rabbitmq_container
     ports:
       - "5672:5672"
       - "15672:15672"
+      
+  redis:
+    image: redis:apline
+    container_name: redis_container
+    

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Peep": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Executable"
+    }
+  }
+}
