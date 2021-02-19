@@ -1,13 +1,12 @@
 ﻿using AutoMapper;
 using MediatR;
-using Peep.API.Application.Providers;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
 using Peep.Core.API.Exceptions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Peep.API.Application.Queries.GetCrawl
+namespace Peep.API.Application.Requests.Queries.GetCrawl
 {
     public class GetCrawlHandler : IRequestHandler<GetCrawlRequest, GetCrawlResponseDTO>
     {
@@ -15,7 +14,7 @@ namespace Peep.API.Application.Queries.GetCrawl
         private readonly IMapper _mapper;
 
         public GetCrawlHandler(
-            PeepApiContext context, 
+            PeepApiContext context,
             IMapper mapper)
         {
             _context = context;
@@ -26,7 +25,7 @@ namespace Peep.API.Application.Queries.GetCrawl
         {
             // check queued table
             var foundQueued = await _context.QueuedJobs.FindAsync(request.CrawlId);
-            if(foundQueued != null)
+            if (foundQueued != null)
             {
                 return _mapper.Map<GetCrawlResponseDTO>(foundQueued);
             }
@@ -40,11 +39,11 @@ namespace Peep.API.Application.Queries.GetCrawl
 
             // check completed table
             var foundCompleted = await _context.CompletedJobs.FindAsync(request.CrawlId);
-            if(foundCompleted != null)
+            if (foundCompleted != null)
             {
                 return _mapper.Map<GetCrawlResponseDTO>(foundCompleted);
             }
-            
+
             // throw that it's not found
             throw new RequestFailedException("Crawl job not found", System.Net.HttpStatusCode.NotFound);
         }

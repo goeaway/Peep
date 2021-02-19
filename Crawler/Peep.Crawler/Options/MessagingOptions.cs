@@ -9,5 +9,6 @@ namespace Peep.Crawler.Options
         public const string Key = "Messaging";
 
         public string Hostname { get; set; }
+        public int Port { get; set; }
     }
 }

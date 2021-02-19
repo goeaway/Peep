@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Peep.API.Application.Providers
+namespace Peep.Core.API.Providers
 {
     public interface ICrawlCancellationTokenProvider
     {

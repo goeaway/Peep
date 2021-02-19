@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Peep.API.Application.Commands.QueueCrawl
+namespace Peep.API.Application.Requests.Commands.QueueCrawl
 {
     public class QueueCrawlValidator : AbstractValidator<QueueCrawlRequest>
     {

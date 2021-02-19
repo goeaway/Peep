@@ -1,7 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
-using Peep.API.Application.Commands.QueueCrawl;
-using Peep.API.Application.Providers;
+using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.Core.API.Providers;
 using Peep.StopConditions;
 using Peep.Tests.API.Core;

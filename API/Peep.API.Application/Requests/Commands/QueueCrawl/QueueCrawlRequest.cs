@@ -2,7 +2,7 @@
 using Peep.API.Models.DTOs;
 using Peep.Core;
 
-namespace Peep.API.Application.Commands.QueueCrawl
+namespace Peep.API.Application.Requests.Commands.QueueCrawl
 {
     public class QueueCrawlRequest : IRequest<QueueCrawlResponseDTO>
     {

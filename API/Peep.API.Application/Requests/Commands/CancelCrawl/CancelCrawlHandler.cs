@@ -1,8 +1,8 @@
 using MediatR;
-using Peep.API.Application.Providers;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
 using Peep.Core.API.Exceptions;
+using Peep.Core.API.Providers;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Peep.API.Application.Commands.CancelQueuedCrawl
+namespace Peep.API.Application.Requests.Commands.CancelCrawl
 {
     public class CancelCrawlHandler : IRequestHandler<CancelCrawlRequest, CancelCrawlResponseDTO>
     {
@@ -29,7 +29,7 @@ namespace Peep.API.Application.Commands.CancelQueuedCrawl
             // try and find in the db, remove from there
             var foundQueued = await _context.QueuedJobs.FindAsync(request.CrawlId);
 
-            if(foundQueued != null)
+            if (foundQueued != null)
             {
                 // dequeue then return
                 _context.QueuedJobs.Remove(foundQueued);
@@ -41,7 +41,7 @@ namespace Peep.API.Application.Commands.CancelQueuedCrawl
             // get the token provider to cancel the job
             // if true, the job was cancelled,
             // if not, then no job was running with this id
-            if(_tokenProvider.CancelJob(request.CrawlId))
+            if (_tokenProvider.CancelJob(request.CrawlId))
             {
                 return new CancelCrawlResponseDTO();
             }

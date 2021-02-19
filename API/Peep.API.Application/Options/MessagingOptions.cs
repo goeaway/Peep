@@ -9,5 +9,8 @@ namespace Peep.API.Application.Options
         public const string Key = "Messaging";
 
         public string Hostname { get; set; }
+            = "localhost";
+        public int Port { get; set; }
+            = 5672;
     }
 }

@@ -3,11 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Peep.API.Application.Queries.GetCrawl
+namespace Peep.API.Application.Requests.Commands.CancelCrawl
 {
-    public class GetCrawlValidator : AbstractValidator<GetCrawlRequest>
+    public class CancelCrawlValidator : AbstractValidator<CancelCrawlRequest>
     {
-        public GetCrawlValidator()
+        public CancelCrawlValidator()
         {
             RuleFor(x => x.CrawlId).NotEmpty().WithMessage("Crawl id required");
         }

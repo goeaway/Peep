@@ -37,12 +37,14 @@ namespace Peep.Crawler
         }
 
         public static IServiceCollection AddMessagingOptions(
-            this IServiceCollection services, 
-            IConfiguration configuration)
+            this IServiceCollection services,
+            IConfiguration configuration,
+            out MessagingOptions messagingOptions)
         {
-            var options = new MessagingOptions();
-            configuration.GetSection(MessagingOptions.Key).Bind(options);
-            return services.AddSingleton(options);
+            messagingOptions = new MessagingOptions();
+            configuration.GetSection(MessagingOptions.Key).Bind(messagingOptions);
+
+            return services.AddSingleton(messagingOptions);
         }
 
         public static IServiceCollection AddCrawlerOptions(

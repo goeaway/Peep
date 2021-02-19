@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Peep.API.Models.DTOs;
 
-namespace Peep.API.Application.Commands.CancelQueuedCrawl
+namespace Peep.API.Application.Requests.Commands.CancelCrawl
 {
     public class CancelCrawlRequest : IRequest<CancelCrawlResponseDTO>
     {

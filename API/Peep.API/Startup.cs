@@ -1,31 +1,28 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Peep.API.Application.Commands.QueueCrawl;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Peep.API.Models.DTOs;
 using Microsoft.AspNetCore.Diagnostics;
-using Peep.API.Application;
 using Peep.API.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
 using Peep.API.Application.Services;
 using Peep.Core.API.Exceptions;
 using Peep.Core.API.Behaviours;
+using Paramore.Brighter.Extensions.DependencyInjection;
+using Paramore.Brighter;
+using Paramore.Brighter.MessagingGateway.RMQ;
+using Peep.API.Application.Requests.Commands.QueueCrawl;
 
 namespace Peep.API
 {
@@ -41,6 +38,21 @@ namespace Peep.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMessagingOptions(Configuration, out var messagingOptions);
+
+            services.AddBrighter(options => {
+                var messageStore = new InMemoryMessageStore();
+                var rmq = new RmqMessageProducer(new RmqMessagingGatewayConnection
+                {
+                    AmpqUri = new AmqpUriSpecification(
+                        new Uri($"amqp://guest:guest@{messagingOptions.Hostname}:{messagingOptions.Port}")),
+                    Exchange = new Exchange("crawler")
+                });
+
+                options.BrighterMessaging = new BrighterMessaging(messageStore, rmq);
+            });
+
+
             services
                 .AddControllers()
                 .AddNewtonsoftJson()
@@ -61,8 +73,6 @@ namespace Peep.API
             services.AddNowProvider();
             services.AddAutoMapper(typeof(QueuedJob));
             services.AddDistributedMemoryCache();
-
-            services.AddMessaging(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

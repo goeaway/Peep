@@ -1,6 +1,6 @@
 ﻿using FluentValidation.TestHelper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Peep.API.Application.Queries.GetCrawl;
+using Peep.API.Application.Requests.Queries.GetCrawl;
 using System;
 using System.Collections.Generic;
 using System.Linq;

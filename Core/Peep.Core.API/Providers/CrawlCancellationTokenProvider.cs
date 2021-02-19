@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Peep.API.Application.Providers
+namespace Peep.Core.API.Providers
 {
     public class CrawlCancellationTokenProvider : ICrawlCancellationTokenProvider
     {
@@ -12,7 +12,7 @@ namespace Peep.API.Application.Providers
 
         public bool CancelJob(string jobId)
         {
-            if(_tokenDictionary.TryGetValue(jobId, out var tokenSource))
+            if (_tokenDictionary.TryGetValue(jobId, out var tokenSource))
             {
                 tokenSource.Cancel();
                 return true;
@@ -23,7 +23,7 @@ namespace Peep.API.Application.Providers
 
         public CancellationToken GetToken(string jobId)
         {
-            if(_tokenDictionary.TryGetValue(jobId, out var tokenSource))
+            if (_tokenDictionary.TryGetValue(jobId, out var tokenSource))
             {
                 return tokenSource.Token;
             }

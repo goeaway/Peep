@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Peep.API.Application.Providers;
 using Serilog;
 using System;
 using System.IO;
@@ -35,13 +34,15 @@ namespace Peep.API
             return services;
         }
 
-        public static IServiceCollection AddMessaging(
+        public static IServiceCollection AddMessagingOptions(
             this IServiceCollection services, 
-            IConfiguration configuration)
+            IConfiguration configuration,
+            out MessagingOptions messagingOptions)
         {
-            var options = new MessagingOptions();
-            configuration.GetSection(MessagingOptions.Key).Bind(options);
-            return services.AddSingleton(options);
+            messagingOptions = new MessagingOptions();
+            configuration.GetSection(MessagingOptions.Key).Bind(messagingOptions);
+
+            return services.AddSingleton(messagingOptions);
         }
     }
 }

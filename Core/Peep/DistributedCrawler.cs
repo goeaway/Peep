@@ -43,7 +43,7 @@ namespace Peep
 
         public ChannelReader<CrawlProgress> Crawl(
             CrawlJob job, 
-            TimeSpan channelUpdateTimeSpan, 
+            int dataCountUpdate, 
             ICrawlFilter filter,
             ICrawlQueue queue,
             CancellationToken cancellationToken)
@@ -68,6 +68,12 @@ namespace Peep
                 throw new ArgumentNullException(nameof(queue));
             }
 
+            if(dataCountUpdate < 1)
+            {
+                throw new InvalidOperationException(
+                    $"Minimum data count update of 1 required, {dataCountUpdate} was provided.");
+            }
+
             var channel = Channel.CreateUnbounded<CrawlProgress>(new UnboundedChannelOptions 
             { 
                 AllowSynchronousContinuations = true, // extremely important
@@ -77,42 +83,48 @@ namespace Peep
 
             // have a task in here that starts the crawl, and then when we get to the end of that set the channel as complete
             // fire and forget task?
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 var data = new Dictionary<Uri, IEnumerable<string>>();
 
                 _crawlerOptions.DataExtractor.LoadCustomRegexPattern(job.DataRegex);
 
-                using (var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter())
+                try
                 {
-                    var userAgent = await browserAdapter.GetUserAgentAsync();
+                    using (var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter())
+                    {
+                        var userAgent = await browserAdapter.GetUserAgentAsync();
 
-                    try
-                    {
-                        await InnerCrawl(
-                            job,
-                            data,
-                            browserAdapter,
-                            userAgent,
-                            filter,
-                            queue,
-                            cancellationToken,
-                            channel.Writer, 
-                            channelUpdateTimeSpan);
+                        try
+                        {
+                            await InnerCrawl(
+                                job,
+                                data,
+                                browserAdapter,
+                                userAgent,
+                                filter,
+                                queue,
+                                cancellationToken,
+                                dataCountUpdate,
+                                channel.Writer);
+                        }
+                        catch(Exception e) when (e is TaskCanceledException || e is OperationCanceledException)
+                        {
+                            // ignore
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        channel.Writer.Complete(new CrawlerRunException(
-                            e.Message,
-                            new CrawlProgress { Data = data },
-                            e));
-                    }
+
+                    await channel.Writer.WriteAsync(new CrawlProgress { Data = data });
+                    channel.Writer.Complete();
                 }
-
-                await channel.Writer.WriteAsync(new CrawlProgress { Data = data });
-                data.Clear();
-                channel.Writer.Complete();
-            });
+                catch (Exception e)
+                {
+                    channel.Writer.Complete(new CrawlerRunException(
+                        e.Message,
+                        new CrawlProgress { Data = data },
+                        e));
+                }
+            }, cancellationToken);
 
             return channel.Reader;
         }
@@ -125,8 +137,8 @@ namespace Peep
             ICrawlFilter filter,
             ICrawlQueue queue,
             CancellationToken cancellationToken,
-            ChannelWriter<CrawlProgress> channelWriter = null,
-            TimeSpan channelWriterUpdateTime = default)
+            int dataCountUpdate,
+            ChannelWriter<CrawlProgress> channelWriter)
         {
             var progressStopwatch = new Stopwatch();
             progressStopwatch.Start();
@@ -141,15 +153,18 @@ namespace Peep
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                if(progressStopwatch.Elapsed >= channelWriterUpdateTime)
+                if(data.Count >= dataCountUpdate)
                 {
-                    await channelWriter.WriteAsync(new CrawlProgress { Data = data });
-                    data.Clear();
+                    if(channelWriter.TryWrite(new CrawlProgress { Data = data, Fuck = data.Count + "" }))
+                    {
+                        Console.WriteLine("HERE" + data.Count);
+                        data.Clear();
+                    }
                     progressStopwatch.Restart();
                 }
 
                 // get next uri, if this returns null we will retry using the retry policy
-                var next = await queueEmptyRetryPolicy.ExecuteAsync(cT => queue.Dequeue(), cancellationToken);
+                var next = await queueEmptyRetryPolicy.ExecuteAsync(ct => queue.Dequeue(), cancellationToken);
 
                 // after a certain amount of retries the policy will just allow through anyway, we then handle below
                 if (next == null) 

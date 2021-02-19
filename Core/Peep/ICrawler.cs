@@ -20,7 +20,7 @@ namespace Peep
         /// <returns></returns>
         ChannelReader<CrawlProgress> Crawl(
             CrawlJob job, 
-            TimeSpan channelUpdateTimeSpan, 
+            int dateUpdateCount, 
             ICrawlFilter filter,
             ICrawlQueue queue,
             CancellationToken cancellationToken);

@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Peep.API.Application.Commands.CancelQueuedCrawl;
-using Peep.API.Application.Commands.QueueCrawl;
-using Peep.API.Application.Queries.GetCrawl;
+using Peep.API.Application.Requests.Commands.CancelCrawl;
+using Peep.API.Application.Requests.Commands.QueueCrawl;
+using Peep.API.Application.Requests.Queries.GetCrawl;
 using Peep.API.Models.DTOs;
 using Peep.Core;
 

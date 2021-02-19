@@ -7,5 +7,6 @@ namespace Peep
     public class CrawlProgress
     {
         public IDictionary<Uri, IEnumerable<string>> Data { get; set; }
+        public string Fuck { get; set; }
     }
 }

@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Peep.API;
-using Peep.API.Application.Providers;
+using Peep.API.Application.Options;
 using Peep.API.Persistence;
+using Peep.Core.API.Providers;
 using System;
 using System.Net.Http;
 
@@ -22,6 +23,7 @@ namespace Peep.Tests.API.Core
 
         public class CreateServerOptions
         {
+            public MessagingOptions MessagingOptions { get; set; }
             public ICrawlCancellationTokenProvider TokenProvider { get; set; }
         }
 
@@ -36,6 +38,11 @@ namespace Peep.Tests.API.Core
                 .UseStartup<Startup>()
                 .ConfigureTestServices(services =>
                 {
+                    if(options.MessagingOptions != null)
+                    {
+                        services.AddSingleton(options.MessagingOptions);
+                    }
+
                     if (options.TokenProvider != null)
                     {
                         services.AddSingleton(options.TokenProvider);

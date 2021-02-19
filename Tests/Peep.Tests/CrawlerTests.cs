@@ -61,7 +61,7 @@ namespace Peep.Tests
         {
             var crawler = new DistributedCrawler();
             Assert.ThrowsException<ArgumentNullException>(
-                () => crawler.Crawl(null, default, new BloomFilter(100), new CrawlQueue(), default));
+                () => crawler.Crawl(null, 1, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
@@ -70,7 +70,7 @@ namespace Peep.Tests
             var crawler = new DistributedCrawler();
             var JOB = new StoppableCrawlJob();
             Assert.ThrowsException<InvalidOperationException>(
-                () => crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(), default));
+                () => crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
@@ -83,7 +83,7 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler();
             Assert.ThrowsException<InvalidOperationException>(
-                () => crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(), default));
+                () => crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
@@ -99,7 +99,7 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler();
             Assert.ThrowsException<ArgumentNullException>(
-                () => crawler.Crawl(JOB, default, null, new CrawlQueue(), default));
+                () => crawler.Crawl(JOB, 1, null, new CrawlQueue(), default));
         }
 
         [TestMethod]
@@ -115,7 +115,23 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler();
             Assert.ThrowsException<ArgumentNullException>(
-                () => crawler.Crawl(JOB, default, new BloomFilter(100), null, default));
+                () => crawler.Crawl(JOB, 1, new BloomFilter(100), null, default));
+        }
+
+        [TestMethod]
+        public void Crawl_Throws_If_DataCountUpdate_LessThanOne()
+        {
+            var JOB = new StoppableCrawlJob
+            {
+                Seeds = new List<Uri>
+                {
+                    new Uri("http://localhost")
+                }
+            };
+
+            var crawler = new DistributedCrawler();
+            Assert.ThrowsException<InvalidOperationException>(
+                () => crawler.Crawl(JOB, 0, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
@@ -145,7 +161,7 @@ namespace Peep.Tests
             cancellationTokenSource.Cancel();
 
             var result = crawler.Crawl(JOB, 
-                default, 
+                1, 
                 new BloomFilter(100),
                 new CrawlQueue(JOB.Seeds),
                 cancellationTokenSource.Token);
@@ -195,7 +211,7 @@ namespace Peep.Tests
 
             var result = crawler.Crawl(
                 JOB,
-                default,
+                1,
                 new BloomFilter(100),
                 new CrawlQueue(JOB.Seeds),
                 CANCELLATION_TOKEN_SOURCE.Token);
@@ -250,7 +266,7 @@ namespace Peep.Tests
 
             var result = crawler.Crawl(
                 JOB, 
-                default,
+                1,
                 new BloomFilter(100),
                 new CrawlQueue(JOB.Seeds),
                 CANCELLATION_TOKEN_SOURCE.Token);
@@ -303,7 +319,12 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(
+                JOB, 
+                1, 
+                new BloomFilter(100), 
+                new CrawlQueue(JOB.Seeds), 
+                CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -361,7 +382,7 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -419,7 +440,7 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -477,7 +498,7 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -537,7 +558,7 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -586,7 +607,7 @@ namespace Peep.Tests
 
             var crawler = new DistributedCrawler(crawlerOptions);
 
-            var result = crawler.Crawl(JOB, default, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
 
             await Task.Delay(1000);
             CANCELLATION_TOKEN_SOURCE.Cancel();
@@ -640,28 +661,31 @@ namespace Peep.Tests
 
             var channelReader = crawler.Crawl(
                 JOB, 
-                TimeSpan.FromMilliseconds(1),
+                1,
                 new BloomFilter(100),
-                new CrawlQueue(JOB.Seeds),
+                mockQueue.Object,
                 CANCELLATION_TOKEN_SOURCE.Token);
 
             var dataStore = new Dictionary<Uri, IEnumerable<string>>();
 
             try
             {
-                await foreach (var result in channelReader.ReadAllAsync(CANCELLATION_TOKEN_SOURCE.Token))
+                while(await channelReader.WaitToReadAsync(CANCELLATION_TOKEN_SOURCE.Token))
                 {
-                    if (result.Data.Count > 0)
+                    while(channelReader.TryRead(out var result))
                     {
-                        foreach(var item in result.Data)
+                        if (result.Data.Count() > 0)
                         {
-                            dataStore.Add(item.Key, item.Value);
+                            foreach (var item in result.Data)
+                            {
+                                dataStore.Add(item.Key, item.Value);
+                            }
                         }
-                    }
 
-                    if (dataStore.Count > 0)
-                    {
-                        CANCELLATION_TOKEN_SOURCE.Cancel();
+                        if (dataStore.Count() > 0)
+                        {
+                            CANCELLATION_TOKEN_SOURCE.Cancel();
+                        }
                     }
                 }
             }
@@ -672,6 +696,80 @@ namespace Peep.Tests
 
             Assert.IsNotNull(dataStore.First().Key.AbsoluteUri);
             Assert.AreEqual("data", dataStore.First().Value.First());
+        }
+
+        [TestMethod]
+        public async Task Crawl_Should_Clear_Data_Between_Channel_Writes()
+        {
+            var URI = new Uri("http://localhost/");
+            const string EXTRACTED_DATA = "<a href='//test.com/'></a>data";
+            const string USER_AGENT = "user-agent";
+            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
+            var JOB = new StoppableCrawlJob
+            {
+                Seeds = new List<Uri>
+                {
+                    URI,
+                    new Uri($"http://localhost/{Guid.NewGuid()}")
+                },
+                DataRegex = "(?<data>data)"
+            };
+
+            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
+            var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockRobotParser = new Mock<IRobotParser>();
+
+            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
+                .ReturnsAsync(mockBrowserAdapter.Object);
+
+            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
+            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+
+            mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
+                .ReturnsAsync(false);
+
+            var crawlerOptions = new CrawlerOptions
+            {
+                RobotParser = mockRobotParser.Object,
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+            };
+
+            var crawler = new DistributedCrawler(crawlerOptions);
+
+            var channelReader = crawler.Crawl(
+                JOB,
+                1,
+                new BloomFilter(100),
+                new CrawlQueue(JOB.Seeds),
+                CANCELLATION_TOKEN_SOURCE.Token);
+
+            var dataStore = new List<Uri>();
+
+            try
+            {
+                while (await channelReader.WaitToReadAsync(CANCELLATION_TOKEN_SOURCE.Token))
+                {
+                    while (channelReader.TryRead(out var result))
+                    {
+                        foreach (var item in result.Data)
+                        {
+                            dataStore.Add(item.Key);
+                        }
+
+                        if (dataStore.Count() > 1)
+                        {
+                            CANCELLATION_TOKEN_SOURCE.Cancel();
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+            }
+
+            Assert.AreEqual(1, dataStore.Where(ds => ds.AbsoluteUri == "http://localhost/").Count());
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Peep.API.Application.Providers;
 using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
 using Peep.API.Persistence;
@@ -16,7 +15,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace Peep.API.Application.Commands.QueueCrawl
+namespace Peep.API.Application.Requests.Commands.QueueCrawl
 {
     public class QueueCrawlHandler : IRequestHandler<QueueCrawlRequest, QueueCrawlResponseDTO>
     {
@@ -32,10 +31,10 @@ namespace Peep.API.Application.Commands.QueueCrawl
         public async Task<QueueCrawlResponseDTO> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
         {
             // force the crawl to have some upper limit stop conditions
-            if(request.Job.StopConditions == null)
+            if (request.Job.StopConditions == null)
             {
                 request.Job.StopConditions = GetRequiredStopConditions();
-            } 
+            }
             else
             {
                 request.Job.StopConditions = request.Job.StopConditions.Concat(GetRequiredStopConditions());

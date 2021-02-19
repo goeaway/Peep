@@ -4,6 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Paramore.Brighter;
+using Paramore.Brighter.Extensions.DependencyInjection;
+using Paramore.Brighter.MessagingGateway.RMQ;
+using Peep.Core.API.Providers;
+using Peep.Core.Infrastructure.Subscriptions;
+using Peep.Crawler.Subscriptions;
 using Peep.Filtering;
 using Peep.Queueing;
 
@@ -22,11 +28,31 @@ namespace Peep.Crawler
                 {
                     services.AddLogger();
                     services.AddCrawler();
-                    services.AddMessagingOptions(hostContext.Configuration);
                     services.AddCrawlerOptions(hostContext.Configuration);
                     services.AddHostedService<Worker>();
                     services.AddTransient<ICrawlFilter>(provider => new BloomFilter(1_000_000));
                     services.AddTransient<ICrawlQueue>(provider => new CrawlQueue());
+
+                    services.AddSingleton<ICrawlCancellationTokenProvider, CrawlCancellationTokenProvider>();
+
+                    // in memory queue for jobs
+                    services.AddSingleton<IJobQueue, JobQueue>();
+
+                    // message subscribers
+
+                    services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);
+
+                    services.AddBrighter(options => {
+                        var messageStore = new InMemoryMessageStore();
+                        var rmq = new RmqMessageProducer(new RmqMessagingGatewayConnection
+                        {
+                            AmpqUri = new AmqpUriSpecification(
+                                new Uri($"amqp://guest:guest@{messagingOptions.Hostname}:{messagingOptions.Port}")),
+                            Exchange = new Exchange("crawler")
+                        });
+
+                        options.BrighterMessaging = new BrighterMessaging(messageStore, rmq);
+                    });
                 });
     }
 }

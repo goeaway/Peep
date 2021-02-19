@@ -2,8 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json;
-using Peep.API.Application.Providers;
-using Peep.API.Application.Queries.GetCrawl;
+using Peep.API.Application.Requests.Queries.GetCrawl;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Models.Mappings;

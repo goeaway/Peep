@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Peep.API.Models.DTOs;
 
-namespace Peep.API.Application.Queries.GetCrawl
+namespace Peep.API.Application.Requests.Queries.GetCrawl
 {
     public class GetCrawlRequest : IRequest<GetCrawlResponseDTO>
     {

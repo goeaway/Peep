@@ -10,11 +10,12 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Paramore.Brighter;
 using Peep.API.Application.Options;
-using Peep.API.Application.Providers;
 using Peep.API.Models.Entities;
 using Peep.API.Persistence;
 using Peep.Core;
+using Peep.Core.API.Messages;
 using Peep.Core.API.Providers;
 using Peep.Exceptions;
 using RabbitMQ.Client;
@@ -28,13 +29,9 @@ namespace Peep.API.Application.Services
         private ILogger _logger;
         private INowProvider _nowProvider;
         private ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
-        private MessagingOptions _messagingOptions;
+        private IAmACommandProcessor _commandProcessor;
 
         private readonly IServiceProvider _serviceProvider;
-
-        private const string CRAWL_EXCHANGE = "crawlExchange";
-        private const string QUEUE_ROUTING_KEY = "queue";
-        private const string CANCEL_ROUTING_KEY = "cancel";
 
         public CrawlerManagerService(
             IServiceProvider serviceProvider)
@@ -46,14 +43,14 @@ namespace Peep.API.Application.Services
             PeepApiContext context,
             ILogger logger,
             INowProvider nowProvider,
-            MessagingOptions messagingOptions,
-            ICrawlCancellationTokenProvider crawlCancellationTokenProvider)
+            ICrawlCancellationTokenProvider crawlCancellationTokenProvider,
+            IAmACommandProcessor commandProcessor)
         {
             _logger = logger;
             _context = context;
             _nowProvider = nowProvider;
             _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
-            _messagingOptions = messagingOptions;
+            _commandProcessor = commandProcessor;
         }
 
         private IServiceScope SetServices(IServiceScope serviceScope)
@@ -64,7 +61,7 @@ namespace Peep.API.Application.Services
                 _nowProvider = serviceScope.ServiceProvider.GetRequiredService<INowProvider>();
                 _context = serviceScope.ServiceProvider.GetRequiredService<PeepApiContext>();
                 _crawlCancellationTokenProvider = serviceScope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
-                _messagingOptions = serviceScope.ServiceProvider.GetRequiredService<MessagingOptions>();
+                _commandProcessor = serviceScope.ServiceProvider.GetRequiredService<IAmACommandProcessor>();
             }
             
             return serviceScope;
@@ -118,20 +115,14 @@ namespace Peep.API.Application.Services
                     var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
                         stoppingToken, _crawlCancellationTokenProvider.GetToken(job.Id));
 
-
-                    var factory = new ConnectionFactory { HostName = _messagingOptions.Hostname };
-                    
-                    using var connection = factory.CreateConnection();
-                    using var channel = connection.CreateModel();
-
-                    channel.ExchangeDeclare(CRAWL_EXCHANGE, ExchangeType.Direct);
-
                     var crawlJob = stoppableCrawlJob as CrawlJob;
                     var identifiableCrawlJob = crawlJob as IdentifiableCrawlJob;
                     identifiableCrawlJob.Id = job.Id;
 
-                    var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(identifiableCrawlJob));
-                    channel.BasicPublish(CRAWL_EXCHANGE, QUEUE_ROUTING_KEY, null, body);
+                    await _commandProcessor
+                        .PostAsync(
+                            new QueueCrawlMessage(identifiableCrawlJob), 
+                            cancellationToken: combinedCancellationTokenSource.Token);
 
                     // go into loop checking for job result + cancellation
                     while (!combinedCancellationTokenSource.IsCancellationRequested)
@@ -147,14 +138,10 @@ namespace Peep.API.Application.Services
                             Duration = duration.Elapsed,
                         };
 
-                        foreach (var stopCondition in stoppableCrawlJob.StopConditions)
+                        if(stoppableCrawlJob.StopConditions.Any(sc => sc.Stop(result)))
                         {
-                            // if crawl should stop by stop condition, set the token source here
-                            if (stopCondition.Stop(result))
-                            {
-                                combinedCancellationTokenSource.Cancel();
-                                break;
-                            }
+                            combinedCancellationTokenSource.Cancel();
+                            break;
                         }
 
                         await Task.Delay(500, combinedCancellationTokenSource.Token);
@@ -163,8 +150,9 @@ namespace Peep.API.Application.Services
                     // the only way to be here is if the token source is cancelled
                     // so broadcast cancellation to crawlers
                     // give crawlers a chance to finish up and respond somehow (maybe an EOF push in the data cache?)
-                    var cancelBody = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(""));
-                    channel.BasicPublish(CRAWL_EXCHANGE, CANCEL_ROUTING_KEY, null, cancelBody);
+                    await _commandProcessor.PostAsync(
+                        new CancelCrawlMessage(job.Id),
+                        cancellationToken: combinedCancellationTokenSource.Token);
 
                     // crawlers will have placed their found data in cache as events
                     // we should gather them all up for the finished data set

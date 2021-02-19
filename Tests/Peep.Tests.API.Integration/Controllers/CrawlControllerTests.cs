@@ -1,9 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.AspNetCore.TestHost;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json;
-using Peep.API.Application.Providers;
+using Peep.API.Application.Options;
 using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
+using Peep.API.Persistence;
+using Peep.Core.API.Providers;
 using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
@@ -18,11 +21,26 @@ namespace Peep.Tests.API.Integration.Controllers
     [TestCategory("API - Integration - Crawl Controller")]
     public class CrawlControllerTests
     {
+        private readonly TestServer _server;
+        private readonly HttpClient _client;
+        private readonly PeepApiContext _context;
+
+        public CrawlControllerTests()
+        {
+            (_server, _client, _context) = Setup.CreateDataBackedServer();
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            _server.Dispose();
+            _client.Dispose();
+            _context.Dispose();
+        }
+
         [TestMethod]
         public async Task Queue_Returns_200_For_Successful_Queue_With_Crawl_Id()
         {
-            var (_, client) = Setup.CreateServer();
-
             var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
@@ -33,7 +51,7 @@ namespace Peep.Tests.API.Integration.Controllers
 
             var requestContent = new StringContent(JsonConvert.SerializeObject(job), Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync("/crawl", requestContent);
+            var response = await _client.PostAsync("/crawl", requestContent);
 
             Assert.AreEqual(200, (int)response.StatusCode);
 
@@ -45,13 +63,11 @@ namespace Peep.Tests.API.Integration.Controllers
         [TestMethod]
         public async Task Queue_Returns_400_For_Request_Validation_Failure()
         {
-            var (_, client) = Setup.CreateServer();
-
             var job = new StoppableCrawlJob();
 
             var requestContent = new StringContent(JsonConvert.SerializeObject(job), Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync("/crawl", requestContent);
+            var response = await _client.PostAsync("/crawl", requestContent);
 
             Assert.AreEqual(400, (int)response.StatusCode);
 
@@ -66,9 +82,7 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (_, client) = Setup.CreateServer();
-
-            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+            var response = await _client.GetAsync($"/crawl/{CRAWL_ID}");
 
             Assert.AreEqual(404, (int)response.StatusCode);
         }
@@ -78,16 +92,14 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (_, client, context) = Setup.CreateDataBackedServer();
-
-            context.QueuedJobs.Add(new QueuedJob
+            _context.QueuedJobs.Add(new QueuedJob
             {
                 Id = CRAWL_ID
             });
 
-            context.SaveChanges();
+            _context.SaveChanges();
 
-            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+            var response = await _client.GetAsync($"/crawl/{CRAWL_ID}");
 
             response.EnsureSuccessStatusCode();
 
@@ -102,16 +114,14 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (_, client, context) = Setup.CreateDataBackedServer();
-
-            context.QueuedJobs.Add(new QueuedJob
+            _context.QueuedJobs.Add(new QueuedJob
             {
                 Id = CRAWL_ID
             });
 
-            context.SaveChanges();
+            _context.SaveChanges();
 
-            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+            var response = await _client.GetAsync($"/crawl/{CRAWL_ID}");
 
             response.EnsureSuccessStatusCode();
 
@@ -127,17 +137,15 @@ namespace Peep.Tests.API.Integration.Controllers
             const string CRAWL_ID = "crawl-id";
             var DATE_COMPLETED = new DateTime(2020, 01, 01);
 
-            var (_, client, context) = Setup.CreateDataBackedServer();
-
-            context.CompletedJobs.Add(new CompletedJob
+            _context.CompletedJobs.Add(new CompletedJob
             {
                 Id = CRAWL_ID,
                 DateCompleted = DATE_COMPLETED
             });
 
-            context.SaveChanges();
+            _context.SaveChanges();
 
-            var response = await client.GetAsync($"/crawl/{CRAWL_ID}");
+            var response = await _client.GetAsync($"/crawl/{CRAWL_ID}");
 
             response.EnsureSuccessStatusCode();
 
@@ -151,14 +159,12 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (_, client, context) = Setup.CreateDataBackedServer();
-
-            context.QueuedJobs.Add(new QueuedJob
+            _context.QueuedJobs.Add(new QueuedJob
             {
                 Id = CRAWL_ID
             });
 
-            var response = await client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
+            var response = await _client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
 
             response.EnsureSuccessStatusCode();
         }
@@ -187,9 +193,7 @@ namespace Peep.Tests.API.Integration.Controllers
         {
             const string CRAWL_ID = "crawl-id";
 
-            var (_, client) = Setup.CreateServer();
-
-            var response = await client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
+            var response = await _client.PostAsync($"/crawl/cancel/{CRAWL_ID}", new StringContent(""));
 
             Assert.AreEqual(404, (int)response.StatusCode);
         }
