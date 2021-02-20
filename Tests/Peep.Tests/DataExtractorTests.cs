@@ -8,7 +8,7 @@ using System.Text;
 namespace Peep.Tests
 {
     [TestClass]
-    [TestCategory("Crawler - Data Extractor")]
+    [TestCategory("Core - Crawler - Data Extractor")]
     public class DataExtractorTests
     {
         [TestMethod]

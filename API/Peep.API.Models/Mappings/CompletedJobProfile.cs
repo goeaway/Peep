@@ -15,18 +15,15 @@ namespace Peep.API.Models.Mappings
         {
             CreateMap<CompletedJob, GetCrawlResponseDTO>()
                 .ForMember(
-                    dto => dto.Data, 
-                    opt => 
-                        opt.MapFrom(cj => 
+                    dto => dto.Data,
+                    opt =>
+                        opt.MapFrom(cj =>
                             JsonConvert
                                 .DeserializeObject<Dictionary<Uri, IEnumerable<string>>>(cj.DataJson)))
                 .ForMember(
                     dto => dto.State,
-                    opt => 
-                        opt.MapFrom(cj => string.IsNullOrWhiteSpace(cj.Errors) ? CrawlState.Complete : CrawlState.Error))
-                .ForMember(
-                    dto => dto.ErrorMessage,
-                    opt => opt.MapFrom(cj => cj.Errors));
+                    opt =>
+                        opt.MapFrom(cj => CrawlState.Complete));
         }
     }
 }

@@ -17,7 +17,7 @@ using Peep.Queueing;
 namespace Peep.Tests
 {
     [TestClass]
-    [TestCategory("Crawler - Crawler")]
+    [TestCategory("Core - Crawler - Crawler")]
     public class CrawlerTests
     {
         [TestMethod]

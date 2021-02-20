@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Peep.Queueing
+namespace Peep.Core.Infrastructure.Queuing
 {
-    public interface ICrawlQueue
+    public interface ICrawlQueueManager
     {
-        Task<Uri> Dequeue();
-        Task Enqueue(Uri uri);
+        Task Clear();
     }
 }

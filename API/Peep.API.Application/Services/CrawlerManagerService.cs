@@ -2,23 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Paramore.Brighter;
-using Peep.API.Application.Options;
 using Peep.API.Models.Entities;
+using Peep.API.Models.Enums;
 using Peep.API.Persistence;
-using Peep.Core;
 using Peep.Core.API.Messages;
 using Peep.Core.API.Providers;
-using Peep.Exceptions;
-using RabbitMQ.Client;
+using Peep.Core.Infrastructure.Data;
+using Peep.Core.Infrastructure.Filtering;
+using Peep.Core.Infrastructure.Queuing;
 using Serilog;
 
 namespace Peep.API.Application.Services
@@ -30,6 +27,9 @@ namespace Peep.API.Application.Services
         private INowProvider _nowProvider;
         private ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
         private IAmACommandProcessor _commandProcessor;
+        private ICrawlDataManager _dataManager;
+        private ICrawlFilterManager _filterManager;
+        private ICrawlQueueManager _queueManager;
 
         private readonly IServiceProvider _serviceProvider;
 
@@ -44,13 +44,19 @@ namespace Peep.API.Application.Services
             ILogger logger,
             INowProvider nowProvider,
             ICrawlCancellationTokenProvider crawlCancellationTokenProvider,
-            IAmACommandProcessor commandProcessor)
+            IAmACommandProcessor commandProcessor,
+            ICrawlFilterManager filterManager,
+            ICrawlQueueManager queueManager,
+            ICrawlDataManager dataManager)
         {
             _logger = logger;
             _context = context;
             _nowProvider = nowProvider;
             _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
             _commandProcessor = commandProcessor;
+            _dataManager = dataManager;
+            _queueManager = queueManager;
+            _filterManager = filterManager;
         }
 
         private IServiceScope SetServices(IServiceScope serviceScope)
@@ -62,6 +68,9 @@ namespace Peep.API.Application.Services
                 _context = serviceScope.ServiceProvider.GetRequiredService<PeepApiContext>();
                 _crawlCancellationTokenProvider = serviceScope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
                 _commandProcessor = serviceScope.ServiceProvider.GetRequiredService<IAmACommandProcessor>();
+                _dataManager = serviceScope.ServiceProvider.GetRequiredService<ICrawlDataManager>();
+                _filterManager = serviceScope.ServiceProvider.GetRequiredService<ICrawlFilterManager>();
+                _queueManager = serviceScope.ServiceProvider.GetRequiredService<ICrawlQueueManager>();
             }
             
             return serviceScope;
@@ -105,9 +114,6 @@ namespace Peep.API.Application.Services
 
                     _context.SaveChanges();
 
-                    var duration = new Stopwatch();
-                    duration.Start();
-
                     var stoppableCrawlJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(job.JobJson);
                     // add job seeds to queue
                     // broadcast job start to crawlers
@@ -119,10 +125,14 @@ namespace Peep.API.Application.Services
                     var identifiableCrawlJob = crawlJob as IdentifiableCrawlJob;
                     identifiableCrawlJob.Id = job.Id;
 
+                    var dateStarted = _nowProvider.Now;
+
                     await _commandProcessor
                         .PostAsync(
                             new QueueCrawlMessage(identifiableCrawlJob), 
                             cancellationToken: combinedCancellationTokenSource.Token);
+
+                    var stopConditionMet = false;
 
                     // go into loop checking for job result + cancellation
                     while (!combinedCancellationTokenSource.IsCancellationRequested)
@@ -133,14 +143,15 @@ namespace Peep.API.Application.Services
                         // check that info against stop conditions
                         var result = new CrawlResult
                         {
-                            CrawlCount = 1,
-
-                            Duration = duration.Elapsed,
+                            CrawlCount = await _filterManager.GetCount(),
+                            DataCount = await _dataManager.GetCount(job.Id),
+                            Duration = _nowProvider.Now - dateStarted
                         };
 
                         if(stoppableCrawlJob.StopConditions.Any(sc => sc.Stop(result)))
                         {
                             combinedCancellationTokenSource.Cancel();
+                            stopConditionMet = true;
                             break;
                         }
 
@@ -150,16 +161,38 @@ namespace Peep.API.Application.Services
                     // the only way to be here is if the token source is cancelled
                     // so broadcast cancellation to crawlers
                     // give crawlers a chance to finish up and respond somehow (maybe an EOF push in the data cache?)
-                    await _commandProcessor.PostAsync(
-                        new CancelCrawlMessage(job.Id),
-                        cancellationToken: combinedCancellationTokenSource.Token);
+                    await _commandProcessor
+                        .PostAsync(
+                            new CancelCrawlMessage(job.Id),
+                            cancellationToken: combinedCancellationTokenSource.Token);
 
                     // crawlers will have placed their found data in cache as events
                     // we should gather them all up for the finished data set
-
+                    var data = await _dataManager.GetData(job.Id);
+                   
                     // create and save completed job with data
+                    _context.CompletedJobs.Add(new CompletedJob
+                    {
+                        Id = job.Id,
+                        DateQueued = job.DateQueued,
+                        DateStarted = dateStarted,
+                        DateCompleted = _nowProvider.Now,
+                        Duration = _nowProvider.Now - dateStarted,
+                        JobJson = job.JobJson,
+                        CompletionReason = 
+                            stopConditionMet ? CrawlCompletionReason.StopConditionMet : 
+                            true ? CrawlCompletionReason.Error : 
+                            CrawlCompletionReason.Cancelled,
+                        CrawlCount = await _filterManager.GetCount(),
+                        DataJson = JsonConvert.SerializeObject(data),
+                    });
+
+                    _context.SaveChanges();
+
                     // clear cache of data, queue, filter
-                    // + any error reporting if required
+                    await _dataManager.Clear(job.Id);
+                    await _queueManager.Clear();
+                    await _filterManager.Clear();
                 } 
                 else
                 {

@@ -7,6 +7,7 @@ using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Models.Mappings;
 using Peep.Core.API.Exceptions;
+using Peep.Core.Infrastructure.Data;
 using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
@@ -60,7 +61,9 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var handler = new GetCrawlHandler(context, CreateMapper());
+            var mockDataManager = new Mock<ICrawlDataManager>();
+
+            var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -99,7 +102,9 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var handler = new GetCrawlHandler(context, CreateMapper());
+            var mockDataManager = new Mock<ICrawlDataManager>();
+
+            var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -139,7 +144,6 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             context.RunningJobs.Add(new RunningJob
             {
                 Id = ID,
-                DataJson = DATA_JSON,
                 DateQueued = DATE_QUEUED,
                 DateStarted = DATE_STARTED,
                 CrawlCount = CRAWL_COUNT,
@@ -148,7 +152,9 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var handler = new GetCrawlHandler(context, CreateMapper());
+            var mockDataManager = new Mock<ICrawlDataManager>();
+
+            var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -193,7 +199,6 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             {
                 Duration = DURATION,
                 DataJson = DATA_JSON,
-                Errors = ERRORS,
                 DateStarted = DATE_STARTED,
                 DateCompleted = DATE_COMPLETED,
                 DateQueued = DATE_QUEUED,
@@ -203,7 +208,9 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var handler = new GetCrawlHandler(context, CreateMapper());
+            var mockDataManager = new Mock<ICrawlDataManager>();
+
+            var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
             var result = await handler.Handle(request, CancellationToken.None);
 
@@ -232,7 +239,9 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             using var context = Setup.CreateContext();
 
-            var handler = new GetCrawlHandler(context, CreateMapper());
+            var mockDataManager = new Mock<ICrawlDataManager>();
+
+            var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
             await Assert.ThrowsExceptionAsync<RequestFailedException>(
                 () => handler.Handle(request, CancellationToken.None));

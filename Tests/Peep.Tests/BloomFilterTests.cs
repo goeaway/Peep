@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Peep.Tests
 {
     [TestClass]
-    [TestCategory("Crawler - Bloom Filter")]
+    [TestCategory("Core - Crawler - Bloom Filter")]
     public class BloomFilterTests
     {
         [TestMethod]

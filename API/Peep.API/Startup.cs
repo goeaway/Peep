@@ -23,6 +23,10 @@ using Paramore.Brighter.Extensions.DependencyInjection;
 using Paramore.Brighter;
 using Paramore.Brighter.MessagingGateway.RMQ;
 using Peep.API.Application.Requests.Commands.QueueCrawl;
+using Peep.Core.Infrastructure;
+using Peep.Core.Infrastructure.Data;
+using Peep.Core.Infrastructure.Queuing;
+using Peep.Core.Infrastructure.Filtering;
 
 namespace Peep.API
 {
@@ -63,16 +67,20 @@ namespace Peep.API
             services.AddMediatR(Assembly.GetAssembly(typeof(QueueCrawlRequest)));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
-            services.AddHostedService<CrawlerManagerService>(provider => new CrawlerManagerService(provider));
+            services.AddHostedService(provider => new CrawlerManagerService(provider));
 
             services.AddDbContext<PeepApiContext>(
                 options => options.UseInMemoryDatabase("PeepApiDatabase"));
+
+            services.AddTransient<ICrawlDataManager, CrawlDataManager>();
+            services.AddTransient<ICrawlQueueManager, CrawlQueueManager>();
+            services.AddTransient<ICrawlFilterManager, CrawlFilterManager>();
 
             services.AddLogger();
             services.AddCrawlCancellationTokenProvider();
             services.AddNowProvider();
             services.AddAutoMapper(typeof(QueuedJob));
-            services.AddDistributedMemoryCache();
+            services.AddRedis(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

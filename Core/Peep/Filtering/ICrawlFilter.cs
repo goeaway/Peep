@@ -10,6 +10,5 @@ namespace Peep.Filtering
         int Count { get; }
         Task Add(string uri);
         Task<bool> Contains(string uri);
-        Task Clear();
     }
 }

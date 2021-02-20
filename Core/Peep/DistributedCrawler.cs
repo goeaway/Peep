@@ -155,7 +155,7 @@ namespace Peep
             {
                 if(data.Count >= dataCountUpdate)
                 {
-                    if(channelWriter.TryWrite(new CrawlProgress { Data = data, Fuck = data.Count + "" }))
+                    if(channelWriter.TryWrite(new CrawlProgress { Data = data }))
                     {
                         Console.WriteLine("HERE" + data.Count);
                         data.Clear();

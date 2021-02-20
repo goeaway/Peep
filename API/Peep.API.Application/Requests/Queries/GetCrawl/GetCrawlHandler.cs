@@ -3,6 +3,7 @@ using MediatR;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
 using Peep.Core.API.Exceptions;
+using Peep.Core.Infrastructure.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,13 +13,16 @@ namespace Peep.API.Application.Requests.Queries.GetCrawl
     {
         private readonly PeepApiContext _context;
         private readonly IMapper _mapper;
+        private readonly ICrawlDataManager _dataManager;
 
         public GetCrawlHandler(
             PeepApiContext context,
+            ICrawlDataManager dataManager,
             IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
+            _dataManager = dataManager;
         }
 
         public async Task<GetCrawlResponseDTO> Handle(GetCrawlRequest request, CancellationToken cancellationToken)
@@ -34,7 +38,11 @@ namespace Peep.API.Application.Requests.Queries.GetCrawl
             var foundRunning = await _context.RunningJobs.FindAsync(request.CrawlId);
             if (foundRunning != null)
             {
-                return _mapper.Map<GetCrawlResponseDTO>(foundRunning);
+                // get data
+                var data = await _dataManager.GetData(request.CrawlId);
+                var mapped = _mapper.Map<GetCrawlResponseDTO>(foundRunning);
+                mapped.Data = data;
+                return mapped;
             }
 
             // check completed table

@@ -8,6 +8,6 @@ namespace Peep
     {
         public int CrawlCount { get; set; }
         public TimeSpan Duration { get; set; }
-        public IDictionary<Uri, IEnumerable<string>> Data { get; set; }
+        public int DataCount { get; set; }
     }
 }

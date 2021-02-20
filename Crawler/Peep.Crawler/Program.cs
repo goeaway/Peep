@@ -8,6 +8,10 @@ using Paramore.Brighter;
 using Paramore.Brighter.Extensions.DependencyInjection;
 using Paramore.Brighter.MessagingGateway.RMQ;
 using Peep.Core.API.Providers;
+using Peep.Core.Infrastructure;
+using Peep.Core.Infrastructure.Data;
+using Peep.Core.Infrastructure.Filtering;
+using Peep.Core.Infrastructure.Queuing;
 using Peep.Core.Infrastructure.Subscriptions;
 using Peep.Crawler.Subscriptions;
 using Peep.Filtering;
@@ -30,8 +34,12 @@ namespace Peep.Crawler
                     services.AddCrawler();
                     services.AddCrawlerOptions(hostContext.Configuration);
                     services.AddHostedService<Worker>();
-                    services.AddTransient<ICrawlFilter>(provider => new BloomFilter(1_000_000));
-                    services.AddTransient<ICrawlQueue>(provider => new CrawlQueue());
+
+                    services.AddRedis(hostContext.Configuration);
+
+                    services.AddTransient<ICrawlFilter, CacheCrawlFilter>();
+                    services.AddTransient<ICrawlQueue, CacheCrawlQueue>();
+                    services.AddTransient<ICrawlDataSink, CacheCrawlDataSink>();
 
                     services.AddSingleton<ICrawlCancellationTokenProvider, CrawlCancellationTokenProvider>();
 

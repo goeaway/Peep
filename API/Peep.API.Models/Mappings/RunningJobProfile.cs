@@ -15,12 +15,6 @@ namespace Peep.API.Models.Mappings
         {
             CreateMap<RunningJob, GetCrawlResponseDTO>()
                 .ForMember(
-                    dto => dto.Data,
-                    opt =>
-                        opt.MapFrom(cj =>
-                            JsonConvert
-                                .DeserializeObject<Dictionary<Uri, IEnumerable<string>>>(cj.DataJson)))
-                .ForMember(
                     dto => dto.State,
                     opt =>
                         opt.MapFrom(cj => CrawlState.Running));

@@ -7,7 +7,7 @@ namespace Peep.Crawler.Options
     public class CrawlConfigOptions
     {
         public const string Key = "Crawl";
-        public int ProgressUpdateMilliseconds { get; set; }
-            = 1000;
+        public int ProgressUpdateDataCount { get; set; }
+            = 10;
     }
 }

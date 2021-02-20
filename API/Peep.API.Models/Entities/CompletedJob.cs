@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Peep.API.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,6 +15,6 @@ namespace Peep.API.Models.Entities
         public DateTime DateCompleted { get; set; }
         public int CrawlCount { get; set; }
         public TimeSpan Duration { get; set; }
-        public string Errors { get; set; }
+        public CrawlCompletionReason CompletionReason { get; set; }
     }
 }

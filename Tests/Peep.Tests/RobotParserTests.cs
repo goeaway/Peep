@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Peep.Tests
 {
     [TestClass]
-    [TestCategory("Crawler - Robot Parser")]
+    [TestCategory("Core - Crawler - Robot Parser")]
     public class RobotParserTests
     {
         [TestMethod]
