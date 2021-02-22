@@ -7,6 +7,7 @@ namespace Peep.Core.Infrastructure.Queuing
 {
     public interface ICrawlQueueManager
     {
+        Task Enqueue(IEnumerable<Uri> uris);
         Task Clear();
     }
 }

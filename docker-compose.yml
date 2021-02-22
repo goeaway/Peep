@@ -1,0 +1,40 @@
+version: '3.4'
+networks:
+  app_bridge:
+    driver: bridge
+
+services:
+  peep.api:
+    image: ${DOCKER_REGISTRY-}peepapi
+    build:
+      context: .
+      dockerfile: API/Peep.API/Dockerfile
+    ports:
+      - "8080:80"
+    networks:
+      - app_bridge
+    depends_on:
+      - rabbitmq
+      - redis
+
+  peep.crawler:
+    image: ${DOCKER_REGISTRY-}peepcrawler
+    build:
+      context: .
+      dockerfile: Crawler/Peep.Crawler/Dockerfile
+    networks:
+      - app_bridge
+    depends_on:
+      - rabbitmq
+      - redis
+
+  rabbitmq: 
+    image: rabbitmq:3-management
+    container_name: rabbitmq_container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      
+  redis:
+    image: redis
+    container_name: redis_container

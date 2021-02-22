@@ -72,7 +72,7 @@ namespace Peep.API
             services.AddDbContext<PeepApiContext>(
                 options => options.UseInMemoryDatabase("PeepApiDatabase"));
 
-            services.AddTransient<ICrawlDataManager, CrawlDataManager>();
+            services.AddTransient<ICrawlDataSinkManager, CrawlDataSinkManager>();
             services.AddTransient<ICrawlQueueManager, CrawlQueueManager>();
             services.AddTransient<ICrawlFilterManager, CrawlFilterManager>();
 

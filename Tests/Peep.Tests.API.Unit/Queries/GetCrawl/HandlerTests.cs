@@ -61,7 +61,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockDataManager = new Mock<ICrawlDataManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -102,7 +102,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockDataManager = new Mock<ICrawlDataManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -152,7 +152,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockDataManager = new Mock<ICrawlDataManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -208,7 +208,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockDataManager = new Mock<ICrawlDataManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -239,7 +239,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             using var context = Setup.CreateContext();
 
-            var mockDataManager = new Mock<ICrawlDataManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 

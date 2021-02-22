@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace Peep.Core.Infrastructure.Data
 {
-    public class CrawlDataManager : ICrawlDataManager
+    public class CrawlDataSinkManager : ICrawlDataSinkManager
     {
         private readonly IConnectionMultiplexer _connection;
 
         private const int DATABASE_ID = 3;
 
-        public CrawlDataManager(IConnectionMultiplexer connection)
+        public CrawlDataSinkManager(IConnectionMultiplexer connection)
         {
             _connection = connection;
         }
@@ -38,7 +38,7 @@ namespace Peep.Core.Infrastructure.Data
         {
             var server = _connection.GetServer("localhost:6379");
 
-            var jobKeys = server.Keys(DATABASE_ID, $"{jobId}.").ToArray();
+            var jobKeys = server.Keys(DATABASE_ID, $@"{jobId}\..*?").ToArray();
 
             var values = await _connection.GetDatabase(DATABASE_ID).StringGetAsync(jobKeys);
 
@@ -53,9 +53,14 @@ namespace Peep.Core.Infrastructure.Data
             return result;
         }
 
-        public Task Clear(string jobId)
+        public async Task Clear(string jobId)
         {
-            throw new NotImplementedException();
+            var server = _connection.GetServer("localhost:6379");
+
+            foreach(var key in server.Keys(DATABASE_ID, $@"{jobId}\.*?"))
+            {
+                await _connection.GetDatabase(DATABASE_ID).KeyDeleteAsync(key);
+            }
         }
     }
 }

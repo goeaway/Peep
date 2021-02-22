@@ -13,11 +13,11 @@ namespace Peep.API.Application.Requests.Queries.GetCrawl
     {
         private readonly PeepApiContext _context;
         private readonly IMapper _mapper;
-        private readonly ICrawlDataManager _dataManager;
+        private readonly ICrawlDataSinkManager _dataManager;
 
         public GetCrawlHandler(
             PeepApiContext context,
-            ICrawlDataManager dataManager,
+            ICrawlDataSinkManager dataManager,
             IMapper mapper)
         {
             _context = context;

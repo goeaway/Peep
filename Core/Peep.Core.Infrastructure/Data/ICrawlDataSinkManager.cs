@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Peep.Core.Infrastructure.Data
 {
-    public interface ICrawlDataManager
+    public interface ICrawlDataSinkManager
     {
         Task<int> GetCount(string jobId);
         Task<IDictionary<Uri, IEnumerable<string>>> GetData(string jobId);
