@@ -11,9 +11,7 @@ namespace Peep.Core.Infrastructure
     {
         public static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
         {
-            var options = ConfigurationOptions.Parse("localhost");
-            options.ConnectRetry = 100;
-            var redis = ConnectionMultiplexer.Connect(options);
+            var redis = ConnectionMultiplexer.Connect("172.22.128.1:6379");
             return services.AddSingleton<IConnectionMultiplexer>(redis);
         }
     }
