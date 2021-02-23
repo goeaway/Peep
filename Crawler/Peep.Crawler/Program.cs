@@ -2,18 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Paramore.Brighter;
-using Paramore.Brighter.Extensions.DependencyInjection;
-using Paramore.Brighter.MessagingGateway.RMQ;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure;
 using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Filtering;
 using Peep.Core.Infrastructure.Queuing;
-using Peep.Core.Infrastructure.Subscriptions;
-using Peep.Crawler.Subscriptions;
+using Peep.Crawler.Messages;
 using Peep.Filtering;
 using Peep.Queueing;
 
@@ -46,20 +43,32 @@ namespace Peep.Crawler
                     // in memory queue for jobs
                     services.AddSingleton<IJobQueue, JobQueue>();
 
-                    // message subscribers
-
                     services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);
 
-                    services.AddBrighter(options => {
-                        var messageStore = new InMemoryMessageStore();
-                        var rmq = new RmqMessageProducer(new RmqMessagingGatewayConnection
+                    services.AddMassTransit(options =>
+                    {
+                        options.UsingRabbitMq((ctx, cfg) =>
                         {
-                            AmpqUri = new AmqpUriSpecification(
-                                new Uri($"amqp://guest:guest@{messagingOptions.Hostname}:{messagingOptions.Port}")),
-                            Exchange = new Exchange("crawler")
-                        });
+                            cfg.Host("172.22.128.1", "/", h =>
+                            {
+                                h.Username("guest");
+                                h.Password("guest");
+                            });
 
-                        options.BrighterMessaging = new BrighterMessaging(messageStore, rmq);
+                            cfg.ReceiveEndpoint("crawl-queued-listener", e =>
+                            {
+                                e.Consumer<CrawlQueuedConsumer>(
+                                    () => new CrawlQueuedConsumer(ctx.GetRequiredService<IJobQueue>()));
+                            });
+
+                            cfg.ReceiveEndpoint("crawl-cancelled-listener", e =>
+                            {
+                                e.Consumer<CrawlCancelledConsumer>(
+                                    () => new CrawlCancelledConsumer(
+                                        ctx.GetRequiredService<IJobQueue>(),
+                                        ctx.GetRequiredService<ICrawlCancellationTokenProvider>()));
+                            });
+                        });
                     });
                 });
     }

@@ -50,10 +50,12 @@ namespace Peep.Crawler
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.Information("Waiting for jobs");
             while (!stoppingToken.IsCancellationRequested)
             {
                 // if crawl found, run the job
                 while (_jobQueue.TryDequeue(out var job)) {
+                    _logger.Information("Running Job {Id}", job.Id);
                     var cancellationTokenSource = 
                         CancellationTokenSource.CreateLinkedTokenSource(
                             stoppingToken, 
@@ -83,6 +85,7 @@ namespace Peep.Crawler
                     // update the running jobs running totals of the crawl result
                     await foreach (var result in channelReader.ReadAllAsync(cancellationToken))
                     {
+                        _logger.Information("Pushing data for job {Id}", job.Id);
                         // send data message back to manager
                         await _dataSink.Push(job.Id, result.Data);
                     }
@@ -98,11 +101,16 @@ namespace Peep.Crawler
             {
                 // send message to say we're complete but error occurred, provide the data in the exception
                 await _dataSink.Push(job.Id, e.CrawlProgress.Data);
-
+                _logger.Error(e, "Error occurred");
             }
             catch (Exception e)
             {
                 // send message to say we're complete but error occurred
+                _logger.Error(e, "Unknown error occurred during crawl");
+            }
+            finally
+            {
+                _logger.Information("Crawl finished");
             }
         }
     }

@@ -14,10 +14,11 @@ namespace Peep.API
         public static IServiceCollection AddLogger(this IServiceCollection services)
         {
             var loggerConfig = new LoggerConfiguration()
-                        .WriteTo
-                            .File(
-                                Path.Combine(AppContext.BaseDirectory, "log.txt"),
-                                rollingInterval: RollingInterval.Day);
+                .WriteTo.Console()
+                .WriteTo
+                    .File(
+                        Path.Combine(AppContext.BaseDirectory, "log.txt"),
+                        rollingInterval: RollingInterval.Day);
 
             services.AddSingleton<ILogger>(loggerConfig.CreateLogger());
             return services;

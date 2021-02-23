@@ -1,19 +1,20 @@
-﻿using Paramore.Brighter;
-using Peep.Core.API.Messages;
+﻿using MassTransit;
+using Paramore.Brighter;
 using Peep.Core.API.Providers;
-using Peep.Crawler;
+using Peep.Core.Infrastructure.Messages;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace Peep.Crawler.Subscriptions
+namespace Peep.Crawler.Messages
 {
-    public class CancelCrawlHandler : RequestHandler<CancelCrawlMessage>
+    public class CrawlCancelledConsumer : IConsumer<CrawlCancelledMessage>
     {
         private readonly IJobQueue _jobQueue;
         private readonly ICrawlCancellationTokenProvider _cancellationTokenProvider;
 
-        public CancelCrawlHandler(
+        public CrawlCancelledConsumer(
             IJobQueue jobQueue,
             ICrawlCancellationTokenProvider cancellationTokenProvider)
         {
@@ -21,17 +22,17 @@ namespace Peep.Crawler.Subscriptions
             _cancellationTokenProvider = cancellationTokenProvider;
         }
 
-        public override CancelCrawlMessage Handle(CancelCrawlMessage command)
+        public Task Consume(ConsumeContext<CrawlCancelledMessage> context)
         {
-            if(_jobQueue.TryRemove(command.CrawlId))
+            if (_jobQueue.TryRemove(context.Message.CrawlId))
             {
             }
 
-            if(_cancellationTokenProvider.CancelJob(command.CrawlId))
+            if (_cancellationTokenProvider.CancelJob(context.Message.CrawlId))
             {
             }
 
-            return base.Handle(command);
+            return Task.CompletedTask;
         }
     }
 }

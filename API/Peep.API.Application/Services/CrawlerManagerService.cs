@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Paramore.Brighter;
+using MassTransit;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Persistence;
-using Peep.Core.API.Messages;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Filtering;
+using Peep.Core.Infrastructure.Messages;
 using Peep.Core.Infrastructure.Queuing;
 using Serilog;
 
@@ -26,11 +26,11 @@ namespace Peep.API.Application.Services
         private ILogger _logger;
         private INowProvider _nowProvider;
         private ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
-        private IAmACommandProcessor _commandProcessor;
         private ICrawlDataSinkManager _dataManager;
         private ICrawlFilterManager _filterManager;
         private ICrawlQueueManager _queueManager;
-
+        private IPublishEndpoint _publishEndpoint;
+        
         private readonly IServiceProvider _serviceProvider;
 
         public CrawlerManagerService(
@@ -44,7 +44,7 @@ namespace Peep.API.Application.Services
             ILogger logger,
             INowProvider nowProvider,
             ICrawlCancellationTokenProvider crawlCancellationTokenProvider,
-            IAmACommandProcessor commandProcessor,
+            IPublishEndpoint publishEndpoint,
             ICrawlFilterManager filterManager,
             ICrawlQueueManager queueManager,
             ICrawlDataSinkManager dataManager)
@@ -53,7 +53,7 @@ namespace Peep.API.Application.Services
             _context = context;
             _nowProvider = nowProvider;
             _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
-            _commandProcessor = commandProcessor;
+            _publishEndpoint = publishEndpoint;
             _dataManager = dataManager;
             _queueManager = queueManager;
             _filterManager = filterManager;
@@ -67,7 +67,7 @@ namespace Peep.API.Application.Services
                 _nowProvider = serviceScope.ServiceProvider.GetRequiredService<INowProvider>();
                 _context = serviceScope.ServiceProvider.GetRequiredService<PeepApiContext>();
                 _crawlCancellationTokenProvider = serviceScope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
-                _commandProcessor = serviceScope.ServiceProvider.GetRequiredService<IAmACommandProcessor>();
+                _publishEndpoint = serviceScope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
                 _dataManager = serviceScope.ServiceProvider.GetRequiredService<ICrawlDataSinkManager>();
                 _filterManager = serviceScope.ServiceProvider.GetRequiredService<ICrawlFilterManager>();
                 _queueManager = serviceScope.ServiceProvider.GetRequiredService<ICrawlQueueManager>();
@@ -104,6 +104,9 @@ namespace Peep.API.Application.Services
 
                 if(foundJob)
                 {
+                    _logger.Information("Running job with id {Id}", job.Id);
+
+                    // save running job
                     _context.RunningJobs.Add(new RunningJob
                     {
                         Id = job.Id,
@@ -115,25 +118,23 @@ namespace Peep.API.Application.Services
                     _context.SaveChanges();
 
                     var stoppableCrawlJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(job.JobJson);
-                    // add job seeds to queue
+                    // queue up job seeds
+                    _logger.Information("Queueing seeds for job {Id} {Seeds}", job.Id, string.Join(", ", stoppableCrawlJob.Seeds));
                     await _queueManager.Enqueue(stoppableCrawlJob.Seeds);
-
-                    // broadcast job start to crawlers
 
                     var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
                         stoppingToken, _crawlCancellationTokenProvider.GetToken(job.Id));
 
                     var crawlJob = stoppableCrawlJob as CrawlJob;
-                    var identifiableCrawlJob = crawlJob as IdentifiableCrawlJob;
-                    identifiableCrawlJob.Id = job.Id;
+                    var identifiableCrawlJob = new IdentifiableCrawlJob(crawlJob, job.Id);
 
                     var dateStarted = _nowProvider.Now;
 
-                    await _commandProcessor
-                        .PostAsync(
-                            new QueueCrawlMessage(identifiableCrawlJob), 
-                            cancellationToken: combinedCancellationTokenSource.Token);
-
+                    _logger.Information("Publishing job {Id} to crawlers", job.Id);
+                    await _publishEndpoint
+                        .Publish(
+                            new CrawlQueuedMessage(identifiableCrawlJob), 
+                            combinedCancellationTokenSource.Token);
                     var stopConditionMet = false;
 
                     // go into loop checking for job result + cancellation
@@ -163,15 +164,17 @@ namespace Peep.API.Application.Services
                     // the only way to be here is if the token source is cancelled
                     // so broadcast cancellation to crawlers
                     // give crawlers a chance to finish up and respond somehow (maybe an EOF push in the data cache?)
-                    await _commandProcessor
-                        .PostAsync(
-                            new CancelCrawlMessage(job.Id),
+                    _logger.Information("Cancelling job {Id}", job.Id);
+                    await _publishEndpoint
+                        .Publish(
+                            new CrawlCancelledMessage(job.Id),
                             cancellationToken: stoppingToken);
 
                     // crawlers will have placed their found data in cache as events
                     // we should gather them all up for the finished data set
                     var data = await _dataManager.GetData(job.Id);
-                   
+
+                    _logger.Information("Completing job {Id}", job.Id);
                     // create and save completed job with data
                     _context.CompletedJobs.Add(new CompletedJob
                     {
@@ -191,6 +194,7 @@ namespace Peep.API.Application.Services
 
                     _context.SaveChanges();
 
+                    _logger.Information("Cleaning up after job");
                     // clear cache of data, queue, filter
                     await _dataManager.Clear(job.Id);
                     await _queueManager.Clear();

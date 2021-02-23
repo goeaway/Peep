@@ -12,12 +12,12 @@ namespace Peep.Crawler
 
         public void Enqueue(IdentifiableCrawlJob job)
         {
-            if(job == null)
+            if (job == null)
             {
                 throw new ArgumentNullException(nameof(job));
             }
 
-            lock(_locker)
+            lock (_locker)
             {
                 _list.Add(job);
             }
@@ -25,16 +25,16 @@ namespace Peep.Crawler
 
         public bool TryRemove(string id)
         {
-            if(id == null)
+            if (id == null)
             {
                 throw new ArgumentNullException(nameof(id));
             }
 
-            lock(_locker)
+            lock (_locker)
             {
                 var found = _list.SingleOrDefault(job => job.Id == id);
 
-                if(found == null)
+                if (found == null)
                 {
                     return false;
                 }
@@ -45,11 +45,11 @@ namespace Peep.Crawler
 
         public bool TryDequeue(out IdentifiableCrawlJob job)
         {
-            lock(_locker)
+            lock (_locker)
             {
                 job = _list.FirstOrDefault();
-                
-                if(job != null)
+
+                if (job != null)
                 {
                     _list.Remove(job);
                 }

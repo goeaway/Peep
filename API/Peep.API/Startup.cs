@@ -19,14 +19,13 @@ using Peep.API.Models.Entities;
 using Peep.API.Application.Services;
 using Peep.Core.API.Exceptions;
 using Peep.Core.API.Behaviours;
-using Paramore.Brighter.Extensions.DependencyInjection;
-using Paramore.Brighter;
-using Paramore.Brighter.MessagingGateway.RMQ;
 using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.Core.Infrastructure;
 using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Queuing;
 using Peep.Core.Infrastructure.Filtering;
+using MassTransit.AspNetCoreIntegration;
+using MassTransit;
 
 namespace Peep.API
 {
@@ -44,18 +43,19 @@ namespace Peep.API
         {
             services.AddMessagingOptions(Configuration, out var messagingOptions);
 
-            services.AddBrighter(options => {
-                var messageStore = new InMemoryMessageStore();
-                var rmq = new RmqMessageProducer(new RmqMessagingGatewayConnection
+            services.AddMassTransit(options => 
+            {
+                options.UsingRabbitMq((ctx, cfg) => 
                 {
-                    AmpqUri = new AmqpUriSpecification(
-                        new Uri($"amqp://guest:guest@{messagingOptions.Hostname}:{messagingOptions.Port}")),
-                    Exchange = new Exchange("crawler")
+                    cfg.Host("172.22.128.1", "/", h =>
+                    {
+                        h.Username("guest");
+                        h.Password("guest");
+                    });
+
+
                 });
-
-                options.BrighterMessaging = new BrighterMessaging(messageStore, rmq);
             });
-
 
             services
                 .AddControllers()
