@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using Peep.Core.API.Options;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,14 +11,17 @@ namespace Peep.Core.Infrastructure.Queuing
     public class CrawlQueueManager : ICrawlQueueManager
     {
         private readonly IConnectionMultiplexer _connection;
+        private readonly CachingOptions _cachingOptions;
 
         private const int DATABASE_ID = 2;
         private const string QUEUE_KEY = "crawlqueue";
 
         public CrawlQueueManager(
-            IConnectionMultiplexer connection)
+            IConnectionMultiplexer connection,
+            CachingOptions cachingOptions)
         {
             _connection = connection;
+            _cachingOptions = cachingOptions;
         }
 
         public async Task Enqueue(IEnumerable<Uri> uris)
@@ -34,7 +38,7 @@ namespace Peep.Core.Infrastructure.Queuing
 
         public async Task Clear()
         {
-            var server = _connection.GetServer("localhost:6379");
+            var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
             await server.FlushDatabaseAsync(DATABASE_ID);
         }

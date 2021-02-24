@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Peep.Crawler.Messages
 {
-    public class CrawlCancelledConsumer : IConsumer<CrawlCancelledMessage>
+    public class CrawlCancelledConsumer : IConsumer<CrawlCancelled>
     {
         private readonly IJobQueue _jobQueue;
         private readonly ICrawlCancellationTokenProvider _cancellationTokenProvider;
@@ -22,7 +22,7 @@ namespace Peep.Crawler.Messages
             _cancellationTokenProvider = cancellationTokenProvider;
         }
 
-        public Task Consume(ConsumeContext<CrawlCancelledMessage> context)
+        public Task Consume(ConsumeContext<CrawlCancelled> context)
         {
             if (_jobQueue.TryRemove(context.Message.CrawlId))
             {

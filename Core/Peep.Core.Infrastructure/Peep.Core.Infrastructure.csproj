@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Peep.Core.API\Peep.Core.API.csproj" />
     <ProjectReference Include="..\Peep\Peep.csproj" />
   </ItemGroup>
 

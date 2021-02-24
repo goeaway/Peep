@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Peep.Core.API.Options;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -11,17 +12,21 @@ namespace Peep.Core.Infrastructure.Data
     public class CrawlDataSinkManager : ICrawlDataSinkManager
     {
         private readonly IConnectionMultiplexer _connection;
+        private readonly CachingOptions _cachingOptions;
 
         private const int DATABASE_ID = 3;
 
-        public CrawlDataSinkManager(IConnectionMultiplexer connection)
+        public CrawlDataSinkManager(
+            IConnectionMultiplexer connection,
+            CachingOptions cachingOptions)
         {
             _connection = connection;
+            _cachingOptions = cachingOptions;
         }
 
         public Task<int> GetCount(string jobId)
         {
-            var server = _connection.GetServer("localhost:6379");
+            var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
             var jobKeys = server.Keys(DATABASE_ID, $"{jobId}.");
 
@@ -36,7 +41,7 @@ namespace Peep.Core.Infrastructure.Data
 
         public async Task<IDictionary<Uri, IEnumerable<string>>> GetData(string jobId)
         {
-            var server = _connection.GetServer("localhost:6379");
+            var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
             var jobKeys = server.Keys(DATABASE_ID, $@"{jobId}\..*?").ToArray();
 
@@ -55,9 +60,9 @@ namespace Peep.Core.Infrastructure.Data
 
         public async Task Clear(string jobId)
         {
-            var server = _connection.GetServer("localhost:6379");
+            var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
-            foreach(var key in server.Keys(DATABASE_ID, $@"{jobId}\.*?"))
+            foreach (var key in server.Keys(DATABASE_ID, $@"{jobId}\.*?"))
             {
                 await _connection.GetDatabase(DATABASE_ID).KeyDeleteAsync(key);
             }

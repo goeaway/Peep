@@ -26,6 +26,7 @@ using Peep.Core.Infrastructure.Queuing;
 using Peep.Core.Infrastructure.Filtering;
 using MassTransit.AspNetCoreIntegration;
 using MassTransit;
+using Peep.Core.API;
 
 namespace Peep.API
 {
@@ -42,18 +43,17 @@ namespace Peep.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMessagingOptions(Configuration, out var messagingOptions);
+            services.AddCachingOptions(Configuration, out var cachingOptions);
 
             services.AddMassTransit(options => 
             {
                 options.UsingRabbitMq((ctx, cfg) => 
                 {
-                    cfg.Host("172.22.128.1", "/", h =>
+                    cfg.Host(messagingOptions.Hostname, "/", h =>
                     {
-                        h.Username("guest");
-                        h.Password("guest");
+                        h.Username(messagingOptions.Username);
+                        h.Password(messagingOptions.Password);
                     });
-
-
                 });
             });
 
@@ -80,7 +80,7 @@ namespace Peep.API
             services.AddCrawlCancellationTokenProvider();
             services.AddNowProvider();
             services.AddAutoMapper(typeof(QueuedJob));
-            services.AddRedis(Configuration);
+            services.AddRedis(cachingOptions);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Peep.Crawler.Messages
 {
-    public class CrawlQueuedConsumer : IConsumer<CrawlQueuedMessage>
+    public class CrawlQueuedConsumer : IConsumer<CrawlQueued>
     {
         public readonly IJobQueue _jobQueue;
 
@@ -18,7 +18,7 @@ namespace Peep.Crawler.Messages
             _jobQueue = jobQueue;
         }
 
-        public Task Consume(ConsumeContext<CrawlQueuedMessage> context)
+        public Task Consume(ConsumeContext<CrawlQueued> context)
         {
             _jobQueue.Enqueue(context.Message.Job);
 

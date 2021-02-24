@@ -4,8 +4,8 @@ using Serilog;
 using System;
 using System.IO;
 using Peep.Core;
+using Peep.Core.API.Options;
 using Peep.Core.API.Providers;
-using Peep.API.Application.Options;
 
 namespace Peep.API
 {
@@ -13,12 +13,16 @@ namespace Peep.API
     {
         public static IServiceCollection AddLogger(this IServiceCollection services)
         {
+            var outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {JobId} {Message:lj}{NewLine}{Exception}";
+
             var loggerConfig = new LoggerConfiguration()
-                .WriteTo.Console()
+                .Enrich.FromLogContext()
+                .WriteTo.Console(outputTemplate: outputTemplate)
                 .WriteTo
                     .File(
                         Path.Combine(AppContext.BaseDirectory, "log.txt"),
-                        rollingInterval: RollingInterval.Day);
+                        rollingInterval: RollingInterval.Day,
+                        outputTemplate: outputTemplate);
 
             services.AddSingleton<ILogger>(loggerConfig.CreateLogger());
             return services;
@@ -35,15 +39,6 @@ namespace Peep.API
             return services;
         }
 
-        public static IServiceCollection AddMessagingOptions(
-            this IServiceCollection services, 
-            IConfiguration configuration,
-            out MessagingOptions messagingOptions)
-        {
-            messagingOptions = new MessagingOptions();
-            configuration.GetSection(MessagingOptions.Key).Bind(messagingOptions);
-
-            return services.AddSingleton(messagingOptions);
-        }
+        
     }
 }

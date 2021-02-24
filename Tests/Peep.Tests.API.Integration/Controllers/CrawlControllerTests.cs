@@ -2,7 +2,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json;
-using Peep.API.Application.Options;
 using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
 using Peep.API.Persistence;

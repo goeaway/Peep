@@ -36,23 +36,13 @@ namespace Peep.Crawler
             return services.AddTransient<INowProvider, NowProvider>();
         }
 
-        public static IServiceCollection AddMessagingOptions(
-            this IServiceCollection services,
-            IConfiguration configuration,
-            out MessagingOptions messagingOptions)
-        {
-            messagingOptions = new MessagingOptions();
-            configuration.GetSection(MessagingOptions.Key).Bind(messagingOptions);
-
-            return services.AddSingleton(messagingOptions);
-        }
-
         public static IServiceCollection AddCrawlerOptions(
             this IServiceCollection services,
             IConfiguration configuration)
         {
             var options = new CrawlConfigOptions();
-            configuration.GetSection(CrawlConfigOptions.Key).Bind(options);
+            configuration.GetSection(CrawlConfigOptions.Key)
+                .Bind(options);
             return services.AddSingleton(options);
         }
     }

@@ -1,4 +1,5 @@
-﻿using Peep.Filtering;
+﻿using Peep.Core.API.Options;
+using Peep.Filtering;
 using StackExchange.Redis;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,17 +9,21 @@ namespace Peep.Core.Infrastructure.Filtering
     public class CacheCrawlFilter : ICrawlFilter
     {
         private readonly IConnectionMultiplexer _connection;
+        private readonly CachingOptions _cachingOptions;
 
         private const int DATABASE_ID = 1;
 
-        public CacheCrawlFilter(IConnectionMultiplexer connection)
+        public CacheCrawlFilter(
+            IConnectionMultiplexer connection,
+            CachingOptions cachingOptions)
         {
             _connection = connection;
+            _cachingOptions = cachingOptions;
         }
 
         public int Count =>
             _connection
-                .GetServer("localhost:6379")
+                .GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}")
                 .Keys(DATABASE_ID)
                 .Count();
 
