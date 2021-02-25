@@ -8,6 +8,8 @@ namespace Peep
     {
         public string Id { get; set; }
 
+        public IdentifiableCrawlJob() { }
+
         public IdentifiableCrawlJob(CrawlJob job, string id)
         {
             Id = id;

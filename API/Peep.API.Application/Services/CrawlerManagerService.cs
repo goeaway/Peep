@@ -137,8 +137,8 @@ namespace Peep.API.Application.Services
 
                             _logger.Information("Publishing job to crawlers");
                             await _publishEndpoint
-                                .Publish<CrawlQueued>(
-                                    new 
+                                .Publish(
+                                    new CrawlQueued
                                     {  
                                         Job = identifiableCrawlJob
                                     },
@@ -174,8 +174,8 @@ namespace Peep.API.Application.Services
                             // give crawlers a chance to finish up and respond somehow (maybe an EOF push in the data cache?)
                             _logger.Information("Cancelling job");
                             await _publishEndpoint
-                                .Publish<CrawlCancelled>(
-                                    new
+                                .Publish(
+                                    new CrawlCancelled
                                     {
                                         CrawlId = job.Id
                                     },

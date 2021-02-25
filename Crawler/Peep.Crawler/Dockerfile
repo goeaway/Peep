@@ -19,6 +19,8 @@ RUN dotnet publish "Peep.Crawler.csproj" -c Release -o /app/publish
 
 FROM base AS final
 
+WORKDIR /app
+
 # install chromium for puppeteer sharp
 RUN apt-get update
 RUN apt-get install chromium -y
@@ -26,7 +28,5 @@ RUN apt-get install chromium -y
 # ENV PUPPETEER_EXECUTABLE_PATH "/usr/bin/google-chrome"
 ENV PUPPETEER_EXECUTABLE_PATH "/usr/bin/chromium"
 
-
-WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Peep.Crawler.dll"]

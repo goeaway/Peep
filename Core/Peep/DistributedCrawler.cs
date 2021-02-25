@@ -202,7 +202,7 @@ namespace Peep
                             {
                                 // retry here
                                 await pageActionRetryPolicy
-                                    .ExecuteAsync(cT => paction.Perform(browserAdapter), cancellationToken);
+                                    .ExecuteAsync(cT => _crawlerOptions.PageActionPerformer.Perform(paction, browserAdapter), cancellationToken);
                             }
                         }
                     }

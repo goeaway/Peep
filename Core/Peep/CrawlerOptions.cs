@@ -5,6 +5,7 @@ using System;
 using Peep.Filtering;
 using Peep.Queueing;
 using Peep.Robots;
+using Peep.PageActions;
 
 namespace Peep
 {
@@ -16,6 +17,10 @@ namespace Peep
             = new DataExtractor();
         public IRobotParser RobotParser { get; set; }
             = new RobotParser(new HttpClient());
+
+        public IPageActionPerformer PageActionPerformer { get; set; }
+            = new PageActionPerformer();
+
         public int PageActionRetryCount { get; set; }
             = 3;
         public int QueueEmptyRetryCount { get; set; }

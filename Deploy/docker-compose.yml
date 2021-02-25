@@ -1,7 +1,4 @@
 version: "2"
-networks:
-  app_bridge:
-    driver: bridge
 services:
   api:
     build: 
@@ -13,8 +10,6 @@ services:
     container_name: peepapi_container
     ports:
       - "8080:80"
-    networks:
-      - app_bridge
     depends_on:
       - rabbitmq
       - redis
@@ -27,8 +22,6 @@ services:
         ASPNET_VERSION: 3.1
         SDK_VERSION: 3.1
     container_name: peepcrawler_container
-    networks:
-      - app_bridge
     depends_on:
       - rabbitmq
       - redis
@@ -41,6 +34,7 @@ services:
       - "15672:15672"
       
   redis:
-    image: redis:apline
+    image: redis
     container_name: redis_container
-    
+    ports:
+      - "6379:6379"

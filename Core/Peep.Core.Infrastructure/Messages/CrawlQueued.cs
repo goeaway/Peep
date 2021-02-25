@@ -1,7 +1,7 @@
 ﻿namespace Peep.Core.Infrastructure.Messages
 {
-    public interface CrawlQueued 
+    public class CrawlQueued 
     {
-        IdentifiableCrawlJob Job { get; set; }
+        public IdentifiableCrawlJob Job { get; set; }
     }
 }

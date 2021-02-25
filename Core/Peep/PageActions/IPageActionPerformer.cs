@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace Peep.PageActions
 {
-    public interface IPageAction
+    public interface IPageActionPerformer
     {
-        string UriRegex { get; set; }
-        object Value { get; set; }
-        SerialisablePageActionType Type { get; set; }
+        Task Perform(IPageAction pageAction, IBrowserAdapter browserAdapter);
     }
 }

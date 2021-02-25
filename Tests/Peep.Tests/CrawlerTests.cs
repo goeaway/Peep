@@ -519,6 +519,7 @@ namespace Peep.Tests
             var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
 
             var mockPageAction = new Mock<IPageAction>();
+            var mockPageActionPerformer = new Mock<IPageActionPerformer>();
 
             var JOB = new StoppableCrawlJob
             {
@@ -553,7 +554,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                PageActionPerformer = mockPageActionPerformer.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
@@ -564,7 +566,7 @@ namespace Peep.Tests
             CANCELLATION_TOKEN_SOURCE.Cancel();
 
             await result.WaitToReadAsync();
-            mockPageAction.Verify(mock => mock.Perform(mockBrowserAdapter.Object), Times.Once());
+            mockPageActionPerformer.Verify(mock => mock.Perform(mockPageAction.Object, mockBrowserAdapter.Object), Times.Once());
         }
 
         [TestMethod]
@@ -576,6 +578,7 @@ namespace Peep.Tests
 
             var mockPageAction = new Mock<IPageAction>();
             mockPageAction.Setup(mock => mock.UriRegex).Returns("anything");
+            var mockPageActionPerformer = new Mock<IPageActionPerformer>();
 
             var JOB = new StoppableCrawlJob
             {
@@ -602,7 +605,8 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
+                PageActionPerformer = mockPageActionPerformer.Object
             };
 
             var crawler = new DistributedCrawler(crawlerOptions);
@@ -613,7 +617,8 @@ namespace Peep.Tests
             CANCELLATION_TOKEN_SOURCE.Cancel();
 
             await result.WaitToReadAsync();
-            mockPageAction.Verify(mock => mock.Perform(mockBrowserAdapter.Object), Times.Never());
+            mockPageActionPerformer
+                .Verify(mock => mock.Perform(mockPageAction.Object, mockBrowserAdapter.Object), Times.Never());
         }
 
         [TestMethod]

@@ -1,7 +1,7 @@
 ﻿namespace Peep.Core.Infrastructure.Messages
 {
-    public interface CrawlCancelled
+    public class CrawlCancelled
     {
-        string CrawlId { get; set; }
+        public string CrawlId { get; set; }
     }
 }

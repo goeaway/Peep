@@ -13,13 +13,16 @@ namespace Peep.Crawler
     {
         public static IServiceCollection AddLogger(this IServiceCollection services)
         {
+            var outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {JobId} {Message:lj}{NewLine}{Exception}";
+
             var loggerConfig = new LoggerConfiguration()
-                        .WriteTo
-                            .Console()
-                        .WriteTo
-                            .File(
-                                Path.Combine(AppContext.BaseDirectory, "log.txt"),
-                                rollingInterval: RollingInterval.Day);
+                .Enrich.FromLogContext()
+                .WriteTo.Console(outputTemplate: outputTemplate)
+                .WriteTo
+                    .File(
+                        Path.Combine(AppContext.BaseDirectory, "log.txt"),
+                        rollingInterval: RollingInterval.Day,
+                        outputTemplate: outputTemplate);
 
             services.AddSingleton<ILogger>(loggerConfig.CreateLogger());
             return services;

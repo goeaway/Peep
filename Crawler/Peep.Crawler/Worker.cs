@@ -15,6 +15,7 @@ using Peep.Queueing;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog;
+using Serilog.Context;
 
 namespace Peep.Crawler
 {
@@ -55,13 +56,16 @@ namespace Peep.Crawler
             {
                 // if crawl found, run the job
                 while (_jobQueue.TryDequeue(out var job)) {
-                    _logger.Information("Running Job {Id}", job.Id);
-                    var cancellationTokenSource = 
-                        CancellationTokenSource.CreateLinkedTokenSource(
-                            stoppingToken, 
-                            _crawlCancellationTokenProvider.GetToken(job.Id));
+                    using(LogContext.PushProperty("JobId", job.Id))
+                    {
+                        _logger.Information("Running Job");
+                        var cancellationTokenSource = 
+                            CancellationTokenSource.CreateLinkedTokenSource(
+                                stoppingToken, 
+                                _crawlCancellationTokenProvider.GetToken(job.Id));
 
-                    await RunJob(job, cancellationTokenSource.Token);
+                        await RunJob(job, cancellationTokenSource.Token);
+                    }
                 }
 
                 await Task.Delay(1000, stoppingToken);
@@ -85,7 +89,7 @@ namespace Peep.Crawler
                     // update the running jobs running totals of the crawl result
                     await foreach (var result in channelReader.ReadAllAsync(cancellationToken))
                     {
-                        _logger.Information("Pushing data for job {Id}", job.Id);
+                        _logger.Information("Pushing data ({Count} item(s))", result.Data.Count);
                         // send data message back to manager
                         await _dataSink.Push(job.Id, result.Data);
                     }
