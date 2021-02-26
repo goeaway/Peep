@@ -39,8 +39,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.Core.Infrastruct
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.Crawler", "Tests\Peep.Tests.Crawler\Peep.Tests.Crawler.csproj", "{FE5D895A-7206-4916-A660-3A4C8D6D439E}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{5F2C8B17-9ACA-4419-AED3-260544592ABB}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,10 +101,6 @@ Global
 		{FE5D895A-7206-4916-A660-3A4C8D6D439E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE5D895A-7206-4916-A660-3A4C8D6D439E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE5D895A-7206-4916-A660-3A4C8D6D439E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5F2C8B17-9ACA-4419-AED3-260544592ABB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5F2C8B17-9ACA-4419-AED3-260544592ABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5F2C8B17-9ACA-4419-AED3-260544592ABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5F2C8B17-9ACA-4419-AED3-260544592ABB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
