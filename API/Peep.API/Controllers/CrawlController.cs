@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Peep.API.Application.Requests.Commands.CancelCrawl;
 using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.API.Application.Requests.Queries.GetCrawl;
 using Peep.API.Models.DTOs;
-using Peep.Core;
 
 namespace Peep.API.Controllers
 {

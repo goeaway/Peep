@@ -1,4 +1,9 @@
 version: "2"
+
+networks:
+  app_bridge:
+    driver: bridge
+    
 services:
   api:
     build: 
@@ -13,6 +18,8 @@ services:
     depends_on:
       - rabbitmq
       - redis
+    networks:
+      - app_bridge
 
   crawler:
     build: 
@@ -25,6 +32,8 @@ services:
     depends_on:
       - rabbitmq
       - redis
+    networks:
+      - app_bridge
 
   rabbitmq: 
     image: rabbitmq:3-management
@@ -32,9 +41,13 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-      
+    networks:
+      - app_bridge
+
   redis:
     image: redis
     container_name: redis_container
     ports:
       - "6379:6379"
+    networks:
+      - app_bridge
