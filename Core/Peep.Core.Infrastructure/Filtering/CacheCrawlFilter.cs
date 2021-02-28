@@ -38,7 +38,7 @@ namespace Peep.Core.Infrastructure.Filtering
         {
             var db = _connection.GetDatabase(DATABASE_ID);
 
-            return (await db.StringGetAsync(uri)).IsNull;
+            return !(await db.StringGetAsync(uri)).IsNull;
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Peep.Crawler.Messages
 {
     public class CrawlQueuedConsumer : IConsumer<CrawlQueued>
     {
-        public readonly IJobQueue _jobQueue;
+        private readonly IJobQueue _jobQueue;
 
         public CrawlQueuedConsumer(IJobQueue jobQueue)
         {

@@ -1,7 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using Peep.Crawler;
 
 namespace Peep.Tests.Crawler
 {
@@ -12,37 +11,73 @@ namespace Peep.Tests.Crawler
         [TestMethod]
         public void TryDequeue_Returns_True_And_Outs_First_Enqueued_Job()
         {
-            Assert.Fail();
+            const string ID_1 = "id1";
+            const string ID_2 = "id2";
+            
+            var jobQueue = new JobQueue();
+            
+            jobQueue.Enqueue(new IdentifiableCrawlJob {Id = ID_1});
+            jobQueue.Enqueue(new IdentifiableCrawlJob {Id = ID_2});
+
+            var result = jobQueue.TryDequeue(out var job);
+            
+            Assert.IsTrue(result);
+            Assert.AreEqual(ID_1, job.Id);
         }
 
         [TestMethod]
         public void TryDequeue_Returns_False_If_Nothing_In_Queue()
         {
-            Assert.Fail();
+            var jobQueue = new JobQueue();
+
+            var result = jobQueue.TryDequeue(out var job);
+
+            Assert.IsFalse(result);
+            Assert.IsNull(job);
         }
 
         [TestMethod]
         public void TryRemove_Returns_False_If_Nothing_Found()
         {
-            Assert.Fail();
+            const string ID = "id";
+            var jobQueue = new JobQueue();
+
+            var result = jobQueue.TryRemove(ID);
+
+            Assert.IsFalse(result);
         }
 
         [TestMethod]
         public void TryRemove_Throws_If_Id_Null()
         {
-            Assert.Fail();
+            var jobQueue = new JobQueue();
+
+            Assert.ThrowsException<ArgumentNullException>(() => jobQueue.TryRemove(null));
         }
         
         [TestMethod]
         public void TryRemove_Returns_True_And_Removes_If_Found()
         {
-            Assert.Fail();
+            const string ID = "id";
+            var jobQueue = new JobQueue();
+            
+            jobQueue.Enqueue(new IdentifiableCrawlJob { Id = ID });
+
+            var result = jobQueue.TryRemove(ID);
+
+            var dequeueResult = jobQueue.TryDequeue(out var job);
+
+            Assert.IsTrue(result);
+            Assert.IsFalse(dequeueResult);
+            Assert.IsNull(job);
         }
 
         [TestMethod]
         public void Enqueue_Throws_If_Job_Null()
         {
-            Assert.Fail();
+            var jobQueue = new JobQueue();
+            
+            Assert.ThrowsException<ArgumentNullException>(() => jobQueue.Enqueue(null));
         }
     }
 }

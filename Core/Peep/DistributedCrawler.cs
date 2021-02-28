@@ -157,7 +157,6 @@ namespace Peep
                 {
                     if(channelWriter.TryWrite(new CrawlProgress { Data = data }))
                     {
-                        Console.WriteLine("HERE" + data.Count);
                         data.Clear();
                     }
                     progressStopwatch.Restart();
@@ -227,7 +226,7 @@ namespace Peep
         private async Task ExtractData(
             string content,
             Uri currentUri, 
-            Dictionary<Uri, IEnumerable<string>> data,
+            IDictionary<Uri, IEnumerable<string>> data,
             CrawlJob job,
             string userAgent,
             ICrawlFilter filter,

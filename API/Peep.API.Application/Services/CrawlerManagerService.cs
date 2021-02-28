@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using MassTransit;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Persistence;
@@ -107,6 +108,9 @@ namespace Peep.API.Application.Services
                 {
                     using (LogContext.PushProperty("JobId", job.Id))
                     {
+                        var stopConditionMet = false;
+                        var dateStarted = _nowProvider.Now;
+
                         try
                         {
                             _logger.Information("Running job");
@@ -117,7 +121,7 @@ namespace Peep.API.Application.Services
                                 Id = job.Id,
                                 JobJson = job.JobJson,
                                 DateQueued = job.DateQueued,
-                                DateStarted = _nowProvider.Now
+                                DateStarted = dateStarted
                             });
 
                             _context.SaveChanges();
@@ -133,17 +137,14 @@ namespace Peep.API.Application.Services
                             var crawlJob = stoppableCrawlJob as CrawlJob;
                             var identifiableCrawlJob = new IdentifiableCrawlJob(crawlJob, job.Id);
 
-                            var dateStarted = _nowProvider.Now;
-
                             _logger.Information("Publishing job to crawlers");
                             await _publishEndpoint
                                 .Publish(
                                     new CrawlQueued
-                                    {  
+                                    {
                                         Job = identifiableCrawlJob
                                     },
                                     combinedCancellationTokenSource.Token);
-                            var stopConditionMet = false;
 
                             // go into loop checking for job result + cancellation
                             while (!combinedCancellationTokenSource.IsCancellationRequested)
@@ -166,6 +167,12 @@ namespace Peep.API.Application.Services
                                     break;
                                 }
 
+                                var running = await _context.RunningJobs.FindAsync(job.Id);
+                                running.Duration = result.Duration;
+                                running.CrawlCount = result.CrawlCount;
+
+                                await _context.SaveChangesAsync();
+                                
                                 await Task.Delay(500, combinedCancellationTokenSource.Token);
                             }
 
@@ -180,7 +187,17 @@ namespace Peep.API.Application.Services
                                         CrawlId = job.Id
                                     },
                                     cancellationToken: stoppingToken);
-
+                        }
+                        catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException)
+                        {
+                            // ignore in this case
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.Error(e, "Error occurred when trying to process job");
+                        }
+                        finally
+                        {
                             // crawlers will have placed their found data in cache as events
                             // we should gather them all up for the finished data set
                             var data = await _dataManager.GetData(job.Id);
@@ -215,10 +232,6 @@ namespace Peep.API.Application.Services
                             await _filterManager.Clear();
 
                             _crawlCancellationTokenProvider.DisposeOfToken(job.Id);
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Error(e, "Error occurred when trying to process job");
                         }
                     }
                 } 

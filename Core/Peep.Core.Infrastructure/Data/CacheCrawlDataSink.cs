@@ -24,7 +24,7 @@ namespace Peep.Core.Infrastructure.Data
             var db = _connection.GetDatabase(DATABASE_ID);
 
             await db.StringSetAsync(
-                $"{jobId}.{data.Count}.{Guid.NewGuid()}", 
+                $"{jobId}.{Guid.NewGuid()}.{data.Count}", 
                 JsonConvert.SerializeObject(data));
         }
     }

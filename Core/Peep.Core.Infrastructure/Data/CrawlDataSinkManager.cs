@@ -28,7 +28,7 @@ namespace Peep.Core.Infrastructure.Data
         {
             var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
-            var jobKeys = server.Keys(DATABASE_ID, $"{jobId}.");
+            var jobKeys = server.Keys(DATABASE_ID, $"{jobId}.*");
 
             return Task.FromResult(
                 jobKeys
@@ -43,26 +43,21 @@ namespace Peep.Core.Infrastructure.Data
         {
             var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
-            var jobKeys = server.Keys(DATABASE_ID, $@"{jobId}\..*?").ToArray();
+            var jobKeys = server.Keys(DATABASE_ID, $"{jobId}.*").ToArray();
 
             var values = await _connection.GetDatabase(DATABASE_ID).StringGetAsync(jobKeys);
 
-            var result = new Dictionary<Uri, IEnumerable<string>>();
-
-            foreach (var value in values)
-            {
-                // deserialise and concatenate
-                result.Concat(JsonConvert.DeserializeObject<IDictionary<Uri, IEnumerable<string>>>(value));
-            }
-
-            return result;
+            return values
+                .Select(value => JsonConvert.DeserializeObject<IDictionary<Uri, IEnumerable<string>>>(value))
+                .SelectMany(data => data)
+                .ToDictionary(item => item.Key, item => item.Value);
         }
 
         public async Task Clear(string jobId)
         {
             var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
-            foreach (var key in server.Keys(DATABASE_ID, $@"{jobId}\.*?"))
+            foreach (var key in server.Keys(DATABASE_ID, $@"{jobId}.*"))
             {
                 await _connection.GetDatabase(DATABASE_ID).KeyDeleteAsync(key);
             }

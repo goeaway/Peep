@@ -127,12 +127,8 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
         {
             const string ID = "random id";
             const int CRAWL_COUNT = 1;
-            var DATA_FIRST_KEY = "http://localhost/";
-            var DATA_FIRST_VALUE = "data";
-            var DATA_JSON = JsonConvert.SerializeObject(new Dictionary<Uri, IEnumerable<string>>()
-            {
-                { new Uri(DATA_FIRST_KEY), new List<string> { DATA_FIRST_VALUE } }
-            });
+            const string DATA_FIRST_KEY = "http://localhost/";
+            const string DATA_FIRST_VALUE = "data";
             var DATE_QUEUED = new DateTime(2021, 01, 01);
             var DATE_STARTED = new DateTime(2022, 01, 01);
             var DURATION = TimeSpan.FromSeconds(1);
@@ -150,9 +146,16 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
                 Duration = DURATION
             });
 
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             var mockDataManager = new Mock<ICrawlDataSinkManager>();
+
+            mockDataManager
+                .Setup(mock => mock.GetData(ID))
+                .ReturnsAsync(new Dictionary<Uri, IEnumerable<string>>
+                {
+                    {new Uri(DATA_FIRST_KEY), new List<string> {DATA_FIRST_VALUE}}
+                });
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -179,17 +182,18 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
         {
             const string ID = "random id";
             const int CRAWL_COUNT = 2;
+            const string DATA_FIRST_KEY = "http://localhost/";
+            const string DATA_FIRST_VALUE = "data";
+            const string ERRORS = "something bad,something else bad";
+            
             var DATE_QUEUED = new DateTime(2021, 01, 01);
             var DATE_STARTED = new DateTime(2022, 01, 01);
             var DATE_COMPLETED = new DateTime(2023, 01, 01);
-            var DATA_FIRST_KEY = "http://localhost/";
-            var DATA_FIRST_VALUE = "data";
             var DATA_JSON = JsonConvert.SerializeObject(new Dictionary<Uri, IEnumerable<string>>() 
             {
                 { new Uri(DATA_FIRST_KEY), new List<string> { DATA_FIRST_VALUE } }
             });
             var DURATION = TimeSpan.FromSeconds(1);
-            var ERRORS = "somthing bad,something else bad";
 
             var request = new GetCrawlRequest(ID);
 
