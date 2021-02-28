@@ -119,7 +119,48 @@ namespace Peep.Tests.Core.Infrastructure
         [TestMethod]
         public async Task Clear_Clears_All_Data_For_Job()
         {
-            Assert.Fail();
+            const string JOB_ID = "id";
+
+            var mockDatabase = new Mock<IDatabase>();
+            var mockServer = new Mock<IServer>();
+            var redisKeys = new RedisKey[] { "1", "2" };
+            
+            mockServer
+                .Setup(
+                    mock => mock
+                        .Keys(
+                            It.IsAny<int>(),
+                            It.IsAny<RedisValue>(),
+                            It.IsAny<int>(),
+                            It.IsAny<long>(),
+                            It.IsAny<int>(),
+                            It.IsAny<CommandFlags>()))
+                .Returns(redisKeys);
+            
+            var redis = new Mock<IConnectionMultiplexer>();
+            redis
+                .Setup(
+                    mock => mock.GetServer(
+                        It.IsAny<string>(), 
+                        null))
+                .Returns(mockServer.Object);
+
+            redis
+                .Setup(
+                    mock => mock.GetDatabase(It.IsAny<int>(), null))
+                .Returns(mockDatabase.Object);
+            
+            var cachingOptions = new CachingOptions();
+            
+            var manager = new CrawlDataSinkManager(redis.Object, cachingOptions);
+
+            await manager.Clear(JOB_ID);
+            
+            // verify key delete async is called for each key
+            mockDatabase
+                .Verify(
+                    mock => mock.KeyDeleteAsync(
+                        It.IsIn(redisKeys), It.IsAny<CommandFlags>()), Times.Exactly(2));
         }
     }
 }

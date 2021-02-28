@@ -26,7 +26,10 @@ using Peep.Core.Infrastructure.Queuing;
 using Peep.Core.Infrastructure.Filtering;
 using MassTransit.AspNetCoreIntegration;
 using MassTransit;
+using Peep.API.Application.Providers;
 using Peep.Core.API;
+using Peep.Core.API.Providers;
+using Peep.Data;
 
 namespace Peep.API
 {
@@ -67,15 +70,43 @@ namespace Peep.API
             services.AddMediatR(Assembly.GetAssembly(typeof(QueueCrawlRequest)));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
-            services.AddHostedService(provider => new CrawlerManagerService(provider));
+            services.AddHostedService(provider =>
+            {
+                var scope = provider.CreateScope();
+                
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
+                var nowProvider = scope.ServiceProvider.GetRequiredService<INowProvider>();
+                var context = scope.ServiceProvider.GetRequiredService<PeepApiContext>();
+                var crawlCancellationTokenProvider = scope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
+                var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+                var filterManager = scope.ServiceProvider.GetRequiredService<ICrawlFilterManager>();
+                var queueManager = scope.ServiceProvider.GetRequiredService<ICrawlQueueManager>();
+                var dataManager = scope.ServiceProvider.GetRequiredService<ICrawlDataSinkManager<ExtractedData>>();
+                var errorManager = scope.ServiceProvider.GetRequiredService<ICrawlDataSinkManager<CrawlErrors>>();
+                var queuedJobProvider = scope.ServiceProvider.GetRequiredService<IQueuedJobProvider>();
+                
+                return new CrawlerManagerService(
+                    context, 
+                    logger, 
+                    nowProvider, 
+                    crawlCancellationTokenProvider, 
+                    publishEndpoint,
+                    filterManager, 
+                    queueManager, 
+                    dataManager, 
+                    errorManager,
+                    queuedJobProvider);
+            });
 
             services.AddDbContext<PeepApiContext>(
                 options => options.UseInMemoryDatabase("PeepApiDatabase"));
 
-            services.AddTransient<ICrawlDataSinkManager, CrawlDataSinkManager>();
+            services.AddTransient<ICrawlDataSinkManager<ExtractedData>, CrawlDataSinkManager>();
+            services.AddTransient<ICrawlDataSinkManager<CrawlErrors>, CrawlErrorSinkManager>();
             services.AddTransient<ICrawlQueueManager, CrawlQueueManager>();
             services.AddTransient<ICrawlFilterManager, CrawlFilterManager>();
-
+            services.AddTransient<IQueuedJobProvider, QueuedJobProvider>();
+            
             services.AddLogger();
             services.AddCrawlCancellationTokenProvider();
             services.AddNowProvider();

@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 
 namespace Peep.Core.Infrastructure.Data
 {
-    public interface ICrawlDataSink
+    public interface ICrawlDataSink<T>
     {
-        Task Push(string jobId, IDictionary<Uri, IEnumerable<string>> data);
+        Task Push(string jobId, T data);
     }
 }

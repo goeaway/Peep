@@ -6,6 +6,7 @@ using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Peep.Data;
 
 namespace Peep.Tests.Core.Infrastructure
 {
@@ -17,7 +18,7 @@ namespace Peep.Tests.Core.Infrastructure
         public async Task Push_Should_Set_Key_As_JobId_Data_Count_And_Guid()
         {
             var ID = "jobid";
-            var DATA = new Dictionary<Uri, IEnumerable<string>>();
+            var DATA = new ExtractedData();
 
             var redisMock = new Mock<IConnectionMultiplexer>();
             var redisDatabase = new Mock<IDatabase>();
@@ -45,7 +46,7 @@ namespace Peep.Tests.Core.Infrastructure
         public async Task Push_Should_Set_Value_As_Serialised_Data()
         {
             var ID = "jobid";
-            var DATA = new Dictionary<Uri, IEnumerable<string>>
+            var DATA = new ExtractedData
             {
                 { new Uri("http://localhost"), new List<string>() }
             };

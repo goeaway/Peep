@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Peep.Data;
 
 namespace Peep.Tests.API.Unit.Queries.GetCrawl
 {
@@ -61,7 +62,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockDataManager = new Mock<ICrawlDataSinkManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -102,7 +103,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             context.SaveChanges();
 
-            var mockDataManager = new Mock<ICrawlDataSinkManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -148,11 +149,11 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             await context.SaveChangesAsync();
 
-            var mockDataManager = new Mock<ICrawlDataSinkManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             mockDataManager
                 .Setup(mock => mock.GetData(ID))
-                .ReturnsAsync(new Dictionary<Uri, IEnumerable<string>>
+                .ReturnsAsync(new ExtractedData
                 {
                     {new Uri(DATA_FIRST_KEY), new List<string> {DATA_FIRST_VALUE}}
                 });
@@ -207,12 +208,13 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
                 DateCompleted = DATE_COMPLETED,
                 DateQueued = DATE_QUEUED,
                 CrawlCount = CRAWL_COUNT,
+                ErrorMessage = ERRORS,
                 Id = ID
             });
 
             context.SaveChanges();
 
-            var mockDataManager = new Mock<ICrawlDataSinkManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
@@ -231,7 +233,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             Assert.AreEqual(DATE_STARTED, result.DateStarted);
 
             Assert.AreEqual(ERRORS, result.ErrorMessage);
-            Assert.AreEqual(CrawlState.Error, result.State);
+            Assert.AreEqual(CrawlState.Complete, result.State);
         }
 
         [TestMethod]
@@ -243,7 +245,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             using var context = Setup.CreateContext();
 
-            var mockDataManager = new Mock<ICrawlDataSinkManager>();
+            var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 

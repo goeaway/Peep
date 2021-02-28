@@ -1,19 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure.Data;
 using Peep.Crawler.Options;
+using Peep.Data;
 using Peep.Exceptions;
 using Peep.Filtering;
 using Peep.Queueing;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 using Serilog;
 using Serilog.Context;
 
@@ -27,7 +22,8 @@ namespace Peep.Crawler
         private readonly ICrawlFilter _filter;
         private readonly ICrawlQueue _queue;
         private readonly IJobQueue _jobQueue;
-        private readonly ICrawlDataSink _dataSink;
+        private readonly ICrawlDataSink<ExtractedData> _dataSink;
+        private readonly ICrawlDataSink<CrawlError> _errorSink;
         private readonly ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
 
         public Worker(ILogger logger,
@@ -36,7 +32,8 @@ namespace Peep.Crawler
             ICrawlFilter filter,
             ICrawlQueue queue,
             IJobQueue jobQueue,
-            ICrawlDataSink dataSink,
+            ICrawlDataSink<ExtractedData> dataSink,
+            ICrawlDataSink<CrawlError> errorSink,
             ICrawlCancellationTokenProvider crawlCancellationTokenProvider)
         {
             _logger = logger;
@@ -47,6 +44,7 @@ namespace Peep.Crawler
             _jobQueue = jobQueue;
             _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
             _dataSink = dataSink;
+            _errorSink = errorSink;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -101,16 +99,18 @@ namespace Peep.Crawler
 
                 // send message to say we're complete
             }
-            catch (CrawlerRunException e)
-            {
-                // send message to say we're complete but error occurred, provide the data in the exception
-                await _dataSink.Push(job.Id, e.CrawlProgress.Data);
-                _logger.Error(e, "Error occurred");
-            }
             catch (Exception e)
             {
+                // push the data we have here
+                if (e is CrawlerRunException crawlerRunException)
+                {
+                    await _dataSink.Push(job.Id, crawlerRunException.CrawlProgress.Data);
+                }
+                
                 // send message to say we're complete but error occurred
-                _logger.Error(e, "Unknown error occurred during crawl");
+                await _errorSink.Push(job.Id, new CrawlError {Exception = e});
+                
+                _logger.Error(e, "Error occurred during crawl");
             }
             finally
             {

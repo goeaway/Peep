@@ -106,5 +106,27 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
                     as SerialisableStopCondition;
             Assert.AreEqual(TimeSpan.FromDays(1).TotalSeconds, savedStopCondition.Value);
         }
+
+        [TestMethod]
+        public async Task Adds_Default_Stop_Condition_If_StopConditions_Null()
+        {
+            var job = new StoppableCrawlJob { StopConditions = null };
+
+            var request = new QueueCrawlRequest(job);
+
+            using var context = Setup.CreateContext();
+            var testNow = new DateTime(2021, 01, 01);
+            var nowProvider = new NowProvider(testNow);
+
+            var handler = new QueueCrawlHandler(context, nowProvider);
+
+            var response = await handler.Handle(request, CancellationToken.None);
+
+            var saved = context.QueuedJobs.Find(response.CrawlId);
+
+            var savedJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(saved.JobJson);
+
+            Assert.AreEqual(2, savedJob.StopConditions.Count());
+        }
     }
 }

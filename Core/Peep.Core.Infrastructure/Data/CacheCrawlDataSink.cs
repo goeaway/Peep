@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Peep.Data;
 
 namespace Peep.Core.Infrastructure.Data
 {
-    public class CacheCrawlDataSink : ICrawlDataSink
+    public class CacheCrawlDataSink : ICrawlDataSink<ExtractedData>
     {
         private readonly IConnectionMultiplexer _connection;
 
@@ -19,7 +20,7 @@ namespace Peep.Core.Infrastructure.Data
             _connection = connection;
         }
 
-        public async Task Push(string jobId, IDictionary<Uri, IEnumerable<string>> data)
+        public async Task Push(string jobId, ExtractedData data)
         {
             var db = _connection.GetDatabase(DATABASE_ID);
 

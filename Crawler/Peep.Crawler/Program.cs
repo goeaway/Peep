@@ -8,6 +8,7 @@ using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Filtering;
 using Peep.Core.Infrastructure.Queuing;
 using Peep.Crawler.Messages;
+using Peep.Data;
 using Peep.Filtering;
 using Peep.Queueing;
 
@@ -35,7 +36,8 @@ namespace Peep.Crawler
 
                     services.AddTransient<ICrawlFilter, CacheCrawlFilter>();
                     services.AddTransient<ICrawlQueue, CacheCrawlQueue>();
-                    services.AddTransient<ICrawlDataSink, CacheCrawlDataSink>();
+                    services.AddTransient<ICrawlDataSink<ExtractedData>, CacheCrawlDataSink>();
+                    services.AddTransient<ICrawlDataSink<CrawlError>, CacheCrawlErrorSink>();
 
                     services.AddSingleton<ICrawlCancellationTokenProvider, CrawlCancellationTokenProvider>();
 

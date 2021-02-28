@@ -54,10 +54,7 @@ namespace Peep.Tests.API.Core
 
         public static (TestServer, HttpClient, PeepApiContext) CreateDataBackedServer(CreateServerOptions options = null)
         {
-            if (options == null)
-            {
-                options = new CreateServerOptions();
-            }
+            options ??= new CreateServerOptions();
 
             var context = CreateContext();
 

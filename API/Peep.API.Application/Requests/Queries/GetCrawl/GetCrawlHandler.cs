@@ -6,6 +6,7 @@ using Peep.Core.API.Exceptions;
 using Peep.Core.Infrastructure.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using Peep.Data;
 
 namespace Peep.API.Application.Requests.Queries.GetCrawl
 {
@@ -13,11 +14,11 @@ namespace Peep.API.Application.Requests.Queries.GetCrawl
     {
         private readonly PeepApiContext _context;
         private readonly IMapper _mapper;
-        private readonly ICrawlDataSinkManager _dataManager;
+        private readonly ICrawlDataSinkManager<ExtractedData> _dataManager;
 
         public GetCrawlHandler(
             PeepApiContext context,
-            ICrawlDataSinkManager dataManager,
+            ICrawlDataSinkManager<ExtractedData> dataManager,
             IMapper mapper)
         {
             _context = context;

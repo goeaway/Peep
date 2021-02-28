@@ -39,6 +39,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.Core.Infrastruct
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peep.Tests.Crawler", "Tests\Peep.Tests.Crawler\Peep.Tests.Crawler.csproj", "{FE5D895A-7206-4916-A660-3A4C8D6D439E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peep.Tests.Core.API", "Tests\Peep.Tests.Core.API\Peep.Tests.Core.API.csproj", "{903C4AB7-D708-4ED2-BB61-AE42AB5A6CBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,10 @@ Global
 		{FE5D895A-7206-4916-A660-3A4C8D6D439E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE5D895A-7206-4916-A660-3A4C8D6D439E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE5D895A-7206-4916-A660-3A4C8D6D439E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{903C4AB7-D708-4ED2-BB61-AE42AB5A6CBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{903C4AB7-D708-4ED2-BB61-AE42AB5A6CBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{903C4AB7-D708-4ED2-BB61-AE42AB5A6CBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{903C4AB7-D708-4ED2-BB61-AE42AB5A6CBF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -120,6 +126,7 @@ Global
 		{01EC3D80-5FA2-451B-B314-06280C4649D8} = {176576F6-D260-4A51-A3B1-CB13E3BD3D14}
 		{24F74776-B930-4055-B747-820E21A07AB3} = {BE5CF83F-F4FD-404D-AF2A-301C2FD4ED13}
 		{FE5D895A-7206-4916-A660-3A4C8D6D439E} = {BE5CF83F-F4FD-404D-AF2A-301C2FD4ED13}
+		{903C4AB7-D708-4ED2-BB61-AE42AB5A6CBF} = {BE5CF83F-F4FD-404D-AF2A-301C2FD4ED13}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5987D7B7-0930-40A4-9AEC-8F1700B98701}

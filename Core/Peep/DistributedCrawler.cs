@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Peep.Data;
 using Polly;
 using Peep.Filtering;
 using Peep.Queueing;
@@ -85,7 +86,7 @@ namespace Peep
             // fire and forget task?
             _ = Task.Run(async () =>
             {
-                var data = new Dictionary<Uri, IEnumerable<string>>();
+                var data = new ExtractedData();
 
                 _crawlerOptions.DataExtractor.LoadCustomRegexPattern(job.DataRegex);
 
@@ -131,7 +132,7 @@ namespace Peep
 
         private async Task InnerCrawl(
             CrawlJob job, 
-            Dictionary<Uri, IEnumerable<string>> data,
+            ExtractedData data,
             IBrowserAdapter browserAdapter, 
             string userAgent,
             ICrawlFilter filter,

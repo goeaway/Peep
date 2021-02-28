@@ -1,23 +1,22 @@
-﻿using Newtonsoft.Json;
-using Peep.Core.API.Options;
-using StackExchange.Redis;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Peep.Core.API.Options;
 using Peep.Data;
+using StackExchange.Redis;
 
 namespace Peep.Core.Infrastructure.Data
 {
-    public class CrawlDataSinkManager : ICrawlDataSinkManager<ExtractedData>
+    public class CrawlErrorSinkManager : ICrawlDataSinkManager<CrawlErrors>
     {
         private readonly IConnectionMultiplexer _connection;
         private readonly CachingOptions _cachingOptions;
 
-        private const int DATABASE_ID = 3;
+        private const int DATABASE_ID = 4;
 
-        public CrawlDataSinkManager(
+        public CrawlErrorSinkManager(
             IConnectionMultiplexer connection,
             CachingOptions cachingOptions)
         {
@@ -33,14 +32,14 @@ namespace Peep.Core.Infrastructure.Data
 
             return Task.FromResult(
                 jobKeys
-                .Sum(jk => Convert
-                    .ToInt32(jk
-                        .ToString()
-                        .Split(".")
-                        .Last())));
+                    .Sum(jk => Convert
+                        .ToInt32(jk
+                            .ToString()
+                            .Split(".")
+                            .Last())));
         }
 
-        public async Task<ExtractedData> GetData(string jobId)
+        public async Task<CrawlErrors> GetData(string jobId)
         {
             var server = _connection.GetServer($"{_cachingOptions.Hostname}:{_cachingOptions.Port}");
 
@@ -48,12 +47,11 @@ namespace Peep.Core.Infrastructure.Data
 
             var values = await _connection.GetDatabase(DATABASE_ID).StringGetAsync(jobKeys);
 
-            var raw = values
-                .Select(value => JsonConvert.DeserializeObject<IDictionary<Uri, IEnumerable<string>>>(value))
-                .SelectMany(data => data)
-                .ToDictionary(item => item.Key, item => item.Value);
-            
-            return new ExtractedData(raw);
+            var result = new CrawlErrors();
+            result.AddRange(values
+                .Select(value => JsonConvert.DeserializeObject<CrawlError>(value)));
+
+            return result;
         }
 
         public async Task Clear(string jobId)

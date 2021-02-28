@@ -22,13 +22,7 @@ namespace Peep.Core.Infrastructure.Queuing
         public async Task<Uri> Dequeue()
         {
             var cacheResult = await _connection.GetDatabase(DATABASE_ID).ListLeftPopAsync(QUEUE_KEY);
-
-            if (cacheResult.IsNullOrEmpty)
-            {
-                return null;
-            }
-
-            return new Uri(cacheResult);
+            return cacheResult.IsNullOrEmpty ? null : new Uri(cacheResult);
         }
 
         public async Task Enqueue(Uri uri)
