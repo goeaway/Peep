@@ -75,7 +75,7 @@ namespace Peep.API.Application.Services
                             job,
                             jobData, 
                             stoppingToken);
-                        _logger.Information("Finishing Job");
+                        _logger.Information("Finished Job");
                     }
                 } 
                 else
@@ -95,6 +95,11 @@ namespace Peep.API.Application.Services
 
             try
             {
+                // clear these first in case previous runs did not
+                await _dataManager.Clear(job.Id);
+                await _queueManager.Clear();
+                await _filterManager.Clear();
+                
                 await _context.RunningJobs.AddAsync(new RunningJob
                 {
                     Id = job.Id,
@@ -104,7 +109,7 @@ namespace Peep.API.Application.Services
                 });
 
                 await _context.SaveChangesAsync();
-                
+
                 // queue up job seeds
                 _logger.Information("Queueing seeds {Seeds}", string.Join(", ", jobData.Seeds));
                 await _queueManager.Enqueue(jobData.Seeds);
@@ -114,62 +119,63 @@ namespace Peep.API.Application.Services
 
                 var identifiableCrawlJob = new IdentifiableCrawlJob(jobData, job.Id);
 
-                try
-                {
-                    _logger.Information("Publishing job to crawlers");
-                    await _publishEndpoint
-                        .Publish(
-                            new CrawlQueued
-                            {
-                                Job = identifiableCrawlJob
-                            },
-                            combinedCancellationTokenSource.Token);
+                _logger.Information("Publishing job to crawlers");
+                await _publishEndpoint
+                    .Publish(
+                        new CrawlQueued
+                        {
+                            Job = identifiableCrawlJob
+                        },
+                        combinedCancellationTokenSource.Token);
 
-                    // go into loop checking for job result + cancellation
-                    while (!combinedCancellationTokenSource.IsCancellationRequested)
+                // go into loop checking for job result + cancellation
+                while (!combinedCancellationTokenSource.IsCancellationRequested)
+                {
+                    // assess duration, crawl count from filter
+                    // and total data (crawlers should provide easily accessible count of data in each 
+                    // push, so we can aggregate easier without having to serialise the data here each time)
+                    // check that info against stop conditions
+                    var result = new CrawlResult
                     {
-                        // assess duration, crawl count from filter
-                        // and total data (crawlers should provide easily accessible count of data in each 
-                        // push, so we can aggregate easier without having to serialise the data here each time)
-                        // check that info against stop conditions
-                        var result = new CrawlResult
-                        {
-                            CrawlCount = await _filterManager.GetCount(),
-                            DataCount = await _dataManager.GetCount(job.Id),
-                            Duration = _nowProvider.Now - dateStarted
-                        };
+                        CrawlCount = await _filterManager.GetCount(),
+                        DataCount = await _dataManager.GetCount(job.Id),
+                        Duration = _nowProvider.Now - dateStarted
+                    };
 
-                        if (jobData.StopConditions.Any(sc => sc.Stop(result)))
-                        {
-                            combinedCancellationTokenSource.Cancel();
-                            stopConditionMet = true;
-                            break;
-                        }
+                    if (jobData.StopConditions.Any(sc => sc.Stop(result)))
+                    {
+                        combinedCancellationTokenSource.Cancel();
+                        stopConditionMet = true;
+                        break;
+                    }
 
-                        var running = await _context.RunningJobs.FindAsync(job.Id);
-                        running.Duration = result.Duration;
-                        running.CrawlCount = result.CrawlCount;
+                    var running = await _context.RunningJobs.FindAsync(job.Id);
+                    running.Duration = result.Duration;
+                    running.CrawlCount = result.CrawlCount;
 
-                        await _context.SaveChangesAsync(combinedCancellationTokenSource.Token);
-                        
-                        await Task.Delay(500, combinedCancellationTokenSource.Token);
-                    }    
-                } 
-                catch (Exception e)
-                {
-                    // broadcast cancellation to crawlers
-                    _logger.Information("Cancelling job");
-                    _logger.Error(e, "Error occurred when trying to process job");
-                    await _publishEndpoint
-                        .Publish(
-                            new CrawlCancelled
-                            {
-                                CrawlId = job.Id
-                            }, CancellationToken.None);
+                    await _context.SaveChangesAsync(combinedCancellationTokenSource.Token);
+
+                    await Task.Delay(500, combinedCancellationTokenSource.Token);
                 }
+            }
+            catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException)
+            {
+                // do nothing for these                
+            }
+            catch (Exception e)  
+            {
+                _logger.Error(e, "Error occurred when trying to process job");
             }
             finally
             {
+                // send cancellation message to stop crawlers
+                await _publishEndpoint
+                    .Publish(
+                        new CrawlCancelled
+                        {
+                            CrawlId = job.Id
+                        }, CancellationToken.None);
+                
                 // crawlers will have placed their found data in cache as events
                 // we should gather them all up for the finished data set
                 var data = await _dataManager.GetData(job.Id);

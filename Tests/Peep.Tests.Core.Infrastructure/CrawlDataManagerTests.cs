@@ -115,6 +115,68 @@ namespace Peep.Tests.Core.Infrastructure
             Assert.AreEqual("http://localhost/", result.Keys.First().AbsoluteUri);
             Assert.AreEqual("data", result.Values.First().First());
         }
+        
+        [TestMethod]
+        public async Task GetData_Combines_Values_Of_Data_With_Same_Key()
+        {
+            const string JOB_ID = "id";
+
+            var data1 = new Dictionary<Uri, IEnumerable<string>>
+            {
+                { new Uri("http://localhost/"), new List<string> { "data" } }
+            };
+
+            var data2 = new Dictionary<Uri, IEnumerable<string>>
+            {
+                { new Uri("http://localhost/"), new List<string> { "data1" } },
+            };
+
+            var mockDatabase = new Mock<IDatabase>();
+            mockDatabase
+                .Setup(
+                    mock => mock.StringGetAsync(
+                        It.IsAny<RedisKey[]>(),
+                        It.IsAny<CommandFlags>()))
+                .ReturnsAsync(new RedisValue[] { JsonConvert.SerializeObject(data1), JsonConvert.SerializeObject(data2) });
+            
+            var mockServer = new Mock<IServer>();
+            mockServer
+                .Setup(
+                    mock => mock
+                        .Keys(
+                            It.IsAny<int>(),
+                            It.IsAny<RedisValue>(),
+                            It.IsAny<int>(),
+                            It.IsAny<long>(),
+                            It.IsAny<int>(),
+                            It.IsAny<CommandFlags>()))
+                .Returns(new RedisKey[] { "1", "2" });
+            
+            var redis = new Mock<IConnectionMultiplexer>();
+            redis
+                .Setup(
+                    mock => mock.GetServer(
+                        It.IsAny<string>(), 
+                        null))
+                .Returns(mockServer.Object);
+
+            redis
+                .Setup(
+                    mock => mock.GetDatabase(It.IsAny<int>(), null))
+                .Returns(mockDatabase.Object);
+            
+            var cachingOptions = new CachingOptions();
+            
+            var manager = new CrawlDataSinkManager(redis.Object, cachingOptions);
+
+            var result = await manager.GetData(JOB_ID);
+            
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual("http://localhost/", result.Keys.First().AbsoluteUri);
+            Assert.AreEqual(2, result.Values.First().Count());
+            Assert.AreEqual("data", result.Values.First().First());
+            Assert.AreEqual("data1", result.Values.First().Last());
+        }
 
         [TestMethod]
         public async Task Clear_Clears_All_Data_For_Job()

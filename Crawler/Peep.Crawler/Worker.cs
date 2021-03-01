@@ -96,8 +96,6 @@ namespace Peep.Crawler
                 {
                     // occurs when cancellation occurs, so we can ignore and treat as normal
                 }
-
-                // send message to say we're complete
             }
             catch (Exception e)
             {
@@ -107,7 +105,6 @@ namespace Peep.Crawler
                     await _dataSink.Push(job.Id, crawlerRunException.CrawlProgress.Data);
                 }
                 
-                // send message to say we're complete but error occurred
                 await _errorSink.Push(job.Id, new CrawlError {Exception = e});
                 
                 _logger.Error(e, "Error occurred during crawl");

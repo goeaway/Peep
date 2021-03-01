@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MassTransit;
 using Moq;
-using Newtonsoft.Json;
 using Peep.API.Application.Providers;
 using Peep.API.Application.Services;
 using Peep.API.Models.Entities;
@@ -542,6 +541,86 @@ namespace Peep.Tests.API.Unit.Services
         }
         
         [TestMethod]
+        public async Task StopCondition_Reached_Publishes_Cancel_Message()
+        {
+            const string JOB_ID = "id";
+            
+            var seeds = new List<Uri>
+            {
+                new Uri("http://localhost")
+            };
+            
+            var logger = new LoggerConfiguration().CreateLogger();
+            var nowProvider = new NowProvider();
+            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            var filterManager = new Mock<ICrawlFilterManager>();
+            var queueManager = new Mock<ICrawlQueueManager>();
+            var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
+            var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var jobProvider = new Mock<IQueuedJobProvider>();
+            
+            await using var context = Setup.CreateContext();
+            
+            var outedQueuedJob = new QueuedJob
+            {
+                Id = JOB_ID,
+            };
+            
+            var mockStopCondition = new Mock<ICrawlStopCondition>();
+            mockStopCondition
+                .Setup(
+                    mock => mock.Stop(It.IsAny<CrawlResult>()))
+                .Returns(true);
+            
+            var outedStoppableJob = new StoppableCrawlJob
+            {
+                Seeds = seeds,
+                StopConditions = new List<ICrawlStopCondition>
+                {
+                    mockStopCondition.Object
+                }
+            }; 
+            
+            jobProvider
+                .SetupSequence(
+                    mock =>
+                        mock.TryGetJob(
+                            out outedQueuedJob,
+                            out outedStoppableJob))
+                .Returns(true)
+                .Returns(false);
+                
+            var service = new CrawlerManagerService(
+                context,
+                logger,
+                nowProvider,
+                cancellationTokenProvider.Object,
+                publishEndpoint.Object,
+                filterManager.Object,
+                queueManager.Object,
+                dataSinkManager.Object,
+                errorSinkManager.Object,
+                jobProvider.Object
+            );
+            
+            var cancellationTokenSource = new CancellationTokenSource();
+            
+            await service.StartAsync(cancellationTokenSource.Token);
+            cancellationTokenSource.Cancel();
+            
+            await service.StopAsync(cancellationTokenSource.Token);
+            
+            publishEndpoint
+                .Verify(
+                    mock => mock
+                        .Publish(
+                            It.IsAny<CrawlCancelled>(),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once());
+        }
+        
+        [TestMethod]
         public async Task CompletedJob_Is_Added_Upon_Completion()
         {
             const string JOB_ID = "id";
@@ -665,7 +744,7 @@ namespace Peep.Tests.API.Unit.Services
             dataSinkManager
                 .Verify(
                     mock => mock.Clear(JOB_ID),
-                Times.Once());
+                Times.Exactly(2));
         }
         
         [TestMethod]
@@ -730,7 +809,7 @@ namespace Peep.Tests.API.Unit.Services
             queueManager
                 .Verify(
                     mock => mock.Clear(),
-                    Times.Once());
+                    Times.Exactly(2));
         }
         
         [TestMethod]
@@ -795,7 +874,7 @@ namespace Peep.Tests.API.Unit.Services
             filterManager
                 .Verify(
                     mock => mock.Clear(),
-                    Times.Once());
+                    Times.Exactly(2));
         }
         
         [TestMethod]

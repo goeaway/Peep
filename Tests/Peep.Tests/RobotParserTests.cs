@@ -42,6 +42,34 @@ Disallow: /some-page
             var result = await parser.UriForbidden(URI, USER_AGENT);
             Assert.IsTrue(result);
         }
+        
+        [TestMethod]
+        public async Task UriForbidden_Returns_True_If_User_Agent_Forbidden_For_A_URI_With_Wildcard()
+        {
+            var URI = new Uri("http://test.com/some-page");
+            const string USER_AGENT = "test-user-agent";
+            const string TEST_ROBOTS = @"User-Agent: test-user-agent
+Disallow: /some-*
+";
+
+            var mockMessageHandler = new Mock<HttpMessageHandler>();
+            mockMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", 
+                    ItExpr.IsAny<HttpRequestMessage>(), 
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = System.Net.HttpStatusCode.OK,
+                    Content = new StringContent(TEST_ROBOTS)
+                });
+
+            var client = new HttpClient(mockMessageHandler.Object);
+            var parser = new RobotParser(client);
+
+            var result = await parser.UriForbidden(URI, USER_AGENT);
+            Assert.IsTrue(result);
+        }
 
         [TestMethod]
         public async Task UriForbidden_Returns_True_If_URI_Included_In_Catchall_Section()

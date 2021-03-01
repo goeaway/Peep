@@ -48,12 +48,22 @@ namespace Peep.Core.Infrastructure.Data
 
             var values = await _connection.GetDatabase(DATABASE_ID).StringGetAsync(jobKeys);
 
-            var raw = values
-                .Select(value => JsonConvert.DeserializeObject<IDictionary<Uri, IEnumerable<string>>>(value))
-                .SelectMany(data => data)
-                .ToDictionary(item => item.Key, item => item.Value);
+            var data = new ExtractedData();
+
+            foreach (var value in values)
+            {
+                var dict = JsonConvert.DeserializeObject<IDictionary<Uri, IEnumerable<string>>>(value);
+                foreach (var (key, enumerable) in dict)
+                {
+                    var added = data.TryAdd(key, enumerable);
+                    if (!added)
+                    {
+                        data[key] = data[key].Concat(enumerable);
+                    }
+                }
+            }
             
-            return new ExtractedData(raw);
+            return data;
         }
 
         public async Task Clear(string jobId)

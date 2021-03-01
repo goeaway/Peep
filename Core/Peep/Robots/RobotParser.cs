@@ -109,19 +109,23 @@ namespace Peep.Robots
                     continue;
                 }
 
-                if (listenToThisLine)
+                if (!listenToThisLine)
                 {
-                    // space to care about sitemaps in future
+                    continue;
+                }
+                
+                // space to care about sitemaps in future
 
-                    if (trimmed.StartsWith("disallow"))
-                    {
-                        var url = trimmed.Replace("disallow: ", "");
+                if (!trimmed.StartsWith("disallow"))
+                {
+                    continue;
+                }
+                
+                var url = trimmed.Replace("disallow: ", "");
 
-                        if (!url.Contains("disallow") && !url.Contains(" ") && url.Length != 0)
-                        {
-                            returnList.Add(url);
-                        }
-                    }
+                if (!url.Contains("disallow") && !url.Contains(" ") && url.Length != 0)
+                {
+                    returnList.Add(url);
                 }
             }
 

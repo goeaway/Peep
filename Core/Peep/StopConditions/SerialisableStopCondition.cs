@@ -16,6 +16,11 @@ namespace Peep.StopConditions
                 throw new InvalidOperationException("Value was null");
             }
 
+            if (progress == null)
+            {
+                throw new ArgumentNullException(nameof(progress));
+            }
+
             return Type switch
             {
                 SerialisableStopConditionType.MaxCrawlCount => progress.CrawlCount >= Convert.ToInt32(Value),

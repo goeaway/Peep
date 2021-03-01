@@ -32,22 +32,5 @@ namespace Peep.Queueing
 
             return Task.CompletedTask;
         }
-
-        public Task Enqueue(IEnumerable<Uri> uris)
-        {
-            foreach(var uri in uris)
-            {
-                _queue.Enqueue(uri);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        public Task Clear()
-        {
-            _queue.Clear();
-
-            return Task.CompletedTask;
-        }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -49,7 +50,7 @@ namespace Peep.Crawler
                     {
                         options.AddConsumer<CrawlQueuedConsumer>();
                         options.AddConsumer<CrawlCancelledConsumer>();
-
+                        
                         options.UsingRabbitMq((ctx, cfg) =>
                         {
                             cfg.Host(messagingOptions.Hostname, "/", h =>
@@ -58,7 +59,25 @@ namespace Peep.Crawler
                                 h.Password(messagingOptions.Password);
                             });
 
-                            cfg.ConfigureEndpoints(ctx);
+                            cfg.ReceiveEndpoint(
+                                "crawl-queued-" + Environment.MachineName, 
+                                e =>
+                                {
+                                    e.Consumer<CrawlQueuedConsumer>(
+                                        () => new CrawlQueuedConsumer(ctx.GetRequiredService<IJobQueue>())
+                                    );
+                                });
+
+                            cfg.ReceiveEndpoint(
+                                "crawl-cancelled-" + Environment.MachineName,
+                                e =>
+                                {
+                                    e.Consumer<CrawlCancelledConsumer>(
+                                        () => new CrawlCancelledConsumer(
+                                            ctx.GetRequiredService<IJobQueue>(),
+                                            ctx.GetRequiredService<ICrawlCancellationTokenProvider>())
+                                    );
+                                });
                         });
                     });
                 });

@@ -10,6 +10,11 @@ namespace Peep.PageActions
     {
         public async Task Perform(IPageAction pageAction, IBrowserAdapter browserAdapter)
         {
+            if (pageAction == null)
+            {
+                throw new ArgumentNullException(nameof(pageAction));
+            }
+            
             if (browserAdapter == null)
             {
                 throw new ArgumentNullException(nameof(browserAdapter));

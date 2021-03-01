@@ -31,7 +31,6 @@ namespace Peep.Tests.Crawler
             var harness = new InMemoryTestHarness();
             var consumerHarness = harness
                 .Consumer<CrawlCancelledConsumer>(() => new CrawlCancelledConsumer(
-                    new LoggerConfiguration().CreateLogger(),
                     jobQueue.Object, 
                     cancelProvider.Object));
 
@@ -71,7 +70,6 @@ namespace Peep.Tests.Crawler
             var harness = new InMemoryTestHarness();
             var consumerHarness = harness
                 .Consumer<CrawlCancelledConsumer>(() => new CrawlCancelledConsumer(
-                    new LoggerConfiguration().CreateLogger(),
                     jobQueue.Object, 
                     cancelProvider.Object));
 
