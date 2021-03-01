@@ -17,7 +17,6 @@ using Peep.Core.Infrastructure.Messages;
 using Peep.Core.Infrastructure.Queuing;
 using Peep.Data;
 using Peep.StopConditions;
-using Peep.Tests.API.Core;
 using Serilog;
 
 namespace Peep.Tests.API.Unit.Services
@@ -508,12 +507,13 @@ namespace Peep.Tests.API.Unit.Services
             }; 
             
             jobProvider
-                .Setup(
+                .SetupSequence(
                     mock =>
                         mock.TryGetJob(
                             out outedQueuedJob,
                             out outedStoppableJob))
-                .Returns(true);
+                .Returns(true)
+                .Returns(false);
                 
             var service = new CrawlerManagerService(
                 context,
@@ -538,7 +538,7 @@ namespace Peep.Tests.API.Unit.Services
             mockStopCondition
                 .Verify(
                     mock => mock.Stop(It.IsAny<CrawlResult>()),
-                Times.Once());
+                Times.AtLeastOnce());
         }
         
         [TestMethod]
@@ -820,16 +820,23 @@ namespace Peep.Tests.API.Unit.Services
             
             await using var context = Setup.CreateContext();
 
-            await context.QueuedJobs.AddAsync(new QueuedJob
+            var outedQueuedJob = new QueuedJob
             {
                 Id = JOB_ID,
-                JobJson = JsonConvert.SerializeObject(new StoppableCrawlJob
-                {
-                    Seeds = seeds 
-                })
-            });
-
-            await context.SaveChangesAsync();
+            };
+            
+            var outedStoppableJob = new StoppableCrawlJob
+            {
+                Seeds = seeds
+            }; 
+            
+            jobProvider
+                .Setup(
+                    mock =>
+                        mock.TryGetJob(
+                            out outedQueuedJob,
+                            out outedStoppableJob))
+                .Returns(true);
                 
             var service = new CrawlerManagerService(
                 context,

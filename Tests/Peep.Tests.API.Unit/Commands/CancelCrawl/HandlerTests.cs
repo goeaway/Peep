@@ -4,7 +4,6 @@ using Peep.API.Application.Requests.Commands.CancelCrawl;
 using Peep.API.Models.Entities;
 using Peep.Core.API.Exceptions;
 using Peep.Core.API.Providers;
-using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;

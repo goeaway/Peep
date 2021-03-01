@@ -8,7 +8,6 @@ using Peep.API.Models.Enums;
 using Peep.API.Models.Mappings;
 using Peep.Core.API.Exceptions;
 using Peep.Core.Infrastructure.Data;
-using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;

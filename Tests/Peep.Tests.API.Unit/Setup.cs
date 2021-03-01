@@ -1,15 +1,15 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using System;
+using System.Net.Http;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Peep.API;
 using Peep.API.Persistence;
-using Peep.Core.API.Providers;
-using System;
-using System.Net.Http;
 using Peep.Core.API.Options;
+using Peep.Core.API.Providers;
 
-namespace Peep.Tests.API.Core
+namespace Peep.Tests.API.Unit
 {
     public static class Setup
     {

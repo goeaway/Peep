@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.Core.API.Providers;
 using Peep.StopConditions;
-using Peep.Tests.API.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
