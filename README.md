@@ -31,7 +31,7 @@ The [MassTransit](https://masstransit-project.com/) nuget package ended up as pa
 
 I then needed a place to store things that the crawlers would need to share, such as a URL queue, a filter that contains already crawled pages and a place the crawlers can deposit the data they've found. For this, I added a Redis cache in it's own docker container.
 
-Finally, I grabbed a load of raspberry pis that I had lying around, and combined them all to make my distributed crawler. Even though all the different parts of my crawler have their own docker containers, and therefore can be run anywhere, such as AWS, I thought it would be nice to have an actual physical thing I can point to and say _that's a crawler, that_. And so here it is...
+Finally, I grabbed a load of raspberry pis that I had lying around, and combined them all to make my distributed crawler. Even though all the different parts of my crawler have their own docker containers, and therefore can be run anywhere, such as AWS, I thought it would be nice to have an actual physical thing I can point to and say _that's a crawler, that_. 
 
 ### Next steps
 There are a couple of issues I need to address before saying this project is complete. 
