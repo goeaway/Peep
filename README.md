@@ -5,7 +5,7 @@ This is a distributed .NET Core crawler, which utilises [PuppeteerSharp](https:/
 
 My aim is to make use of Kubernetes as well, to orchestrate how many nodes are running at once, this could then be used to scale up/down the crawler based on how many jobs are queued and waiting to be run!
 
-### A Distributed .NET Core Crawler
+### Yet another web crawler
 
 Throughout my developer career I think I've made at least 10 different web crawlers. The idea with all of them was to create an interesting application that could be used by me to practice some advanced concepts, such as how to make a multi-threaded application, or how to make my code as efficient as possible, all while providing a tool that could actually be useful.
 
