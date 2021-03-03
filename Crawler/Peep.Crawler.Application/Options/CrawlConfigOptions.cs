@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Peep.Crawler.Options
+﻿namespace Peep.Crawler.Application.Options
 {
     public class CrawlConfigOptions
     {

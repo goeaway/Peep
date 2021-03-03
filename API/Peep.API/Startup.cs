@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Reflection;
 using FluentValidation.AspNetCore;
@@ -24,11 +23,8 @@ using Peep.Core.Infrastructure;
 using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Queuing;
 using Peep.Core.Infrastructure.Filtering;
-using MassTransit.AspNetCoreIntegration;
 using MassTransit;
-using Peep.API.Application.Providers;
 using Peep.Core.API;
-using Peep.Core.API.Providers;
 using Peep.Data;
 
 namespace Peep.API
@@ -75,27 +71,13 @@ namespace Peep.API
                 var scope = provider.CreateScope();
                 
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
-                var nowProvider = scope.ServiceProvider.GetRequiredService<INowProvider>();
+                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                 var context = scope.ServiceProvider.GetRequiredService<PeepApiContext>();
-                var crawlCancellationTokenProvider = scope.ServiceProvider.GetRequiredService<ICrawlCancellationTokenProvider>();
-                var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
-                var filterManager = scope.ServiceProvider.GetRequiredService<ICrawlFilterManager>();
-                var queueManager = scope.ServiceProvider.GetRequiredService<ICrawlQueueManager>();
-                var dataManager = scope.ServiceProvider.GetRequiredService<ICrawlDataSinkManager<ExtractedData>>();
-                var errorManager = scope.ServiceProvider.GetRequiredService<ICrawlDataSinkManager<CrawlErrors>>();
-                var queuedJobProvider = scope.ServiceProvider.GetRequiredService<IQueuedJobProvider>();
                 
                 return new CrawlerManagerService(
-                    context, 
-                    logger, 
-                    nowProvider, 
-                    crawlCancellationTokenProvider, 
-                    publishEndpoint,
-                    filterManager, 
-                    queueManager, 
-                    dataManager, 
-                    errorManager,
-                    queuedJobProvider);
+                    logger,
+                    mediator,
+                    context);
             });
 
             services.AddDbContext<PeepApiContext>(
@@ -105,7 +87,6 @@ namespace Peep.API
             services.AddTransient<ICrawlDataSinkManager<CrawlErrors>, CrawlErrorSinkManager>();
             services.AddTransient<ICrawlQueueManager, CrawlQueueManager>();
             services.AddTransient<ICrawlFilterManager, CrawlFilterManager>();
-            services.AddTransient<IQueuedJobProvider, QueuedJobProvider>();
             
             services.AddLogger();
             services.AddCrawlCancellationTokenProvider();
@@ -145,30 +126,29 @@ namespace Peep.API
                 var exception = exHandlerPathFeature.Error;
                 var uri = ctx.Request.Path;
 
-                var logger = app.ApplicationServices.GetService<ILogger>();
+                var logger = app.ApplicationServices.GetRequiredService<ILogger>();
 
                 var errorResponse = new ErrorResponseDTO
                 {
                     Message = exception.Message
                 };
 
-                if(exception is RequestValidationFailedException)
+                switch (exception)
                 {
-                    ctx.Response.StatusCode = 400;
-                    errorResponse.Message = "Validation error";
-                    errorResponse.Errors = (exception as RequestValidationFailedException).Failures.Select(f => f.ErrorMessage);
-                    logger.Error("Validation error occurred: {Errors}", string.Join(", ", errorResponse.Errors));
-                }
-                else if (exception is RequestFailedException)
-                {
-                    var rfException = exception as RequestFailedException;
-                    ctx.Response.StatusCode = (int)rfException.StatusCode;
-                    errorResponse.Message = rfException.Message;
-                    logger.Error("Request failed ({StatusCode}): {Error}", rfException.StatusCode, rfException.Message);
-                }
-                else
-                {
-                    logger.Error(exception, "Error occurred when processing request {uri}", uri);
+                    case RequestValidationFailedException failedException:
+                        ctx.Response.StatusCode = 400;
+                        errorResponse.Message = "Validation error";
+                        errorResponse.Errors = failedException.Failures.Select(f => f.ErrorMessage);
+                        logger.Error("Validation error occurred: {Errors}", string.Join(", ", errorResponse.Errors));
+                        break;
+                    case RequestFailedException rfException:
+                        ctx.Response.StatusCode = (int)rfException.StatusCode;
+                        errorResponse.Message = rfException.Message;
+                        logger.Error("Request failed ({StatusCode}): {Error}", rfException.StatusCode, rfException.Message);
+                        break;
+                    default:
+                        logger.Error(exception, "Error occurred when processing request {uri}", uri);
+                        break;
                 }
 
                 await ctx.Response.WriteAsync(JsonConvert.SerializeObject(errorResponse));

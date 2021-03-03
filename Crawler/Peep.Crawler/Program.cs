@@ -1,8 +1,11 @@
 using System;
+using System.Reflection;
 using MassTransit;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Peep.Core.API;
+using Peep.Core.API.Behaviours;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure;
 using Peep.Core.Infrastructure.Data;
@@ -12,6 +15,8 @@ using Peep.Crawler.Messages;
 using Peep.Data;
 using Peep.Filtering;
 using Peep.Queueing;
+using Peep.Crawler.Application.Requests.Commands.RunCrawl;
+using Peep.Crawler.Application.Services;
 
 namespace Peep.Crawler
 {
@@ -34,6 +39,9 @@ namespace Peep.Crawler
                     services.AddHostedService<Worker>();
 
                     services.AddRedis(cachingOptions);
+                    
+                    services.AddMediatR(Assembly.GetAssembly(typeof(RunCrawlRequest)));
+                    services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
                     services.AddTransient<ICrawlFilter, CacheCrawlFilter>();
                     services.AddTransient<ICrawlQueue, CacheCrawlQueue>();
@@ -64,7 +72,7 @@ namespace Peep.Crawler
                                 e =>
                                 {
                                     e.Consumer<CrawlQueuedConsumer>(
-                                        () => new CrawlQueuedConsumer(ctx.GetRequiredService<IJobQueue>())
+                                        () => new CrawlQueuedConsumer(ctx.GetRequiredService<IMediator>())
                                     );
                                 });
 
@@ -73,9 +81,7 @@ namespace Peep.Crawler
                                 e =>
                                 {
                                     e.Consumer<CrawlCancelledConsumer>(
-                                        () => new CrawlCancelledConsumer(
-                                            ctx.GetRequiredService<IJobQueue>(),
-                                            ctx.GetRequiredService<ICrawlCancellationTokenProvider>())
+                                        () => new CrawlCancelledConsumer(ctx.GetRequiredService<IMediator>())
                                     );
                                 });
                         });

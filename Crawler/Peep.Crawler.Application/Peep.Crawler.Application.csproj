@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="FluentValidation" Version="9.5.1" />
+      <PackageReference Include="MediatR" Version="9.0.0" />
+      <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="9.0.0" />
+      <PackageReference Include="Serilog" Version="2.10.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Peep.Core.API\Peep.Core.API.csproj" />
+      <ProjectReference Include="..\..\Core\Peep.Core.Infrastructure\Peep.Core.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\Core\Peep\Peep.csproj" />
+    </ItemGroup>
+
+</Project>

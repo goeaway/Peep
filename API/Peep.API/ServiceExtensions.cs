@@ -13,16 +13,17 @@ namespace Peep.API
     {
         public static IServiceCollection AddLogger(this IServiceCollection services)
         {
-            var outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {JobId} {Message:lj}{NewLine}{Exception}";
+            const string OUTPUT_TEMPLATE = 
+                "[{Timestamp:HH:mm:ss} {Level:u3}] {JobId} {Message:lj}{NewLine}{Exception}";
 
             var loggerConfig = new LoggerConfiguration()
                 .Enrich.FromLogContext()
-                .WriteTo.Console(outputTemplate: outputTemplate)
+                .WriteTo.Console(outputTemplate: OUTPUT_TEMPLATE)
                 .WriteTo
                     .File(
                         Path.Combine(AppContext.BaseDirectory, "log.txt"),
                         rollingInterval: RollingInterval.Day,
-                        outputTemplate: outputTemplate);
+                        outputTemplate: OUTPUT_TEMPLATE);
 
             services.AddSingleton<ILogger>(loggerConfig.CreateLogger());
             return services;

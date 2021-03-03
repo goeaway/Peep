@@ -1,11 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using Peep.Crawler;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Peep.Crawler.Application.Services;
 
-namespace Peep.Tests.Crawler
+namespace Peep.Tests.Crawler.Unit.Services
 {
     [TestClass]
-    [TestCategory("Crawler - Job Queue")]
+    [TestCategory("Crawler - Unit - Job Queue")]
     public class JobQueueTests
     {
         [TestMethod]

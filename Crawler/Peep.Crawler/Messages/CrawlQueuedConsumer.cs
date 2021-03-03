@@ -6,23 +6,21 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using MediatR;
+using Peep.Crawler.Application.Requests.Commands.QueueCrawl;
 
 namespace Peep.Crawler.Messages
 {
     public class CrawlQueuedConsumer : IConsumer<CrawlQueued>
     {
-        private readonly IJobQueue _jobQueue;
+        private readonly IMediator _mediator;
 
-        public CrawlQueuedConsumer(IJobQueue jobQueue)
+        public CrawlQueuedConsumer(IMediator mediator)
         {
-            _jobQueue = jobQueue;
+            _mediator = mediator;
         }
 
         public Task Consume(ConsumeContext<CrawlQueued> context)
-        {
-            _jobQueue.Enqueue(context.Message.Job);
-
-            return Task.CompletedTask;
-        }
+            => _mediator.Send(new QueueCrawlRequest { Job = context.Message.Job });
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Peep.Crawler
+﻿namespace Peep.Crawler.Application.Services
 {
     public interface IJobQueue
     {

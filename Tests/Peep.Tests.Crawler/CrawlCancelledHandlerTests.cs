@@ -2,12 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using MassTransit.Testing;
+using MediatR;
 using Moq;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure.Messages;
 using Peep.Crawler;
+using Peep.Crawler.Application.Requests.Commands.CancelCrawl;
+using Peep.Crawler.Application.Services;
 using Peep.Crawler.Messages;
 using Serilog;
 
@@ -18,74 +22,33 @@ namespace Peep.Tests.Crawler
     public class CancelCrawlHandlerTests
     {
         [TestMethod]
-        public async Task Tries_To_Remove_From_JobQueue()
+        public async Task Uses_Mediator_With_CancelCrawlRequest_And_ID()
         {
             const string JOB_ID = "id";
-            
-            var jobQueue = new Mock<IJobQueue>();
-            jobQueue.Setup(mock => mock.TryRemove(JOB_ID))
-                .Returns(true);
-            
-            var cancelProvider = new Mock<ICrawlCancellationTokenProvider>();
+
+            var mediator = new Mock<IMediator>();
             
             var harness = new InMemoryTestHarness();
             var consumerHarness = harness
-                .Consumer<CrawlCancelledConsumer>(() => new CrawlCancelledConsumer(
-                    jobQueue.Object, 
-                    cancelProvider.Object));
+                .Consumer(() => new CrawlCancelledConsumer(mediator.Object));
 
             await harness.Start();
             try
             {
-                await harness.InputQueueSendEndpoint.Send<CrawlCancelled>(new CrawlCancelled
+                await harness.InputQueueSendEndpoint.Send(new CrawlCancelled
                 {
                     CrawlId = JOB_ID
                 });
 
                 await consumerHarness.Consumed.Any<CrawlCancelled>();
                 
-                jobQueue.Verify(mock => mock.TryRemove(JOB_ID), Times.Once());
-                
-                cancelProvider.Verify(
-                    mock => mock.CancelJob(It.IsAny<string>()), 
-                    Times.Never());
-            }
-            finally
-            {
-                await harness.Stop();
-            }
-        }
-
-        [TestMethod]
-        public async Task Tries_To_Cancel_Running_Job_If_Not_In_Queue()
-        {
-            const string JOB_ID = "id";
-            
-            var jobQueue = new Mock<IJobQueue>();
-            jobQueue.Setup(mock => mock.TryRemove(JOB_ID))
-                .Returns(false);
-            
-            var cancelProvider = new Mock<ICrawlCancellationTokenProvider>();
-            
-            var harness = new InMemoryTestHarness();
-            var consumerHarness = harness
-                .Consumer<CrawlCancelledConsumer>(() => new CrawlCancelledConsumer(
-                    jobQueue.Object, 
-                    cancelProvider.Object));
-
-            await harness.Start();
-            try
-            {
-                await harness.InputQueueSendEndpoint.Send<CrawlCancelled>(new CrawlCancelled
-                {
-                    CrawlId = JOB_ID
-                });
-
-                await consumerHarness.Consumed.Any<CrawlCancelled>();
-                
-                cancelProvider.Verify(
-                    mock => mock.CancelJob(JOB_ID), 
-                    Times.Once());
+                mediator
+                    .Verify(
+                        mock => mock
+                            .Send(It.Is<CancelCrawlRequest>(
+                                value => value.CrawlId == JOB_ID),
+                                It.IsAny<CancellationToken>())
+                        , Times.Once());
             }
             finally
             {

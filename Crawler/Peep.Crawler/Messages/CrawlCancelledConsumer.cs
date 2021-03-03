@@ -6,36 +6,22 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using MediatR;
+using Peep.Crawler.Application.Requests.Commands.CancelCrawl;
 using Serilog;
 
 namespace Peep.Crawler.Messages
 {
     public class CrawlCancelledConsumer : IConsumer<CrawlCancelled>
     {
-        private readonly IJobQueue _jobQueue;
-        private readonly ICrawlCancellationTokenProvider _cancellationTokenProvider;
+        private readonly IMediator _mediator;
 
-        public CrawlCancelledConsumer(
-            IJobQueue jobQueue,
-            ICrawlCancellationTokenProvider cancellationTokenProvider)
+        public CrawlCancelledConsumer(IMediator mediator)
         {
-            _jobQueue = jobQueue;
-            _cancellationTokenProvider = cancellationTokenProvider;
+            _mediator = mediator;
         }
 
-        public Task Consume(ConsumeContext<CrawlCancelled> context)
-        {
-            if (_jobQueue.TryRemove(context.Message.CrawlId))
-            {
-                return Task.CompletedTask;
-            }
-
-            if (_cancellationTokenProvider.CancelJob(context.Message.CrawlId))
-            {
-                return Task.CompletedTask;
-            }
-
-            return Task.CompletedTask;
-        }
+        public Task Consume(ConsumeContext<CrawlCancelled> context) 
+            => _mediator.Send(new CancelCrawlRequest { CrawlId = context.Message.CrawlId });
     }
 }

@@ -2,11 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using MassTransit.Testing;
+using MediatR;
 using Moq;
 using Peep.Core.Infrastructure.Messages;
 using Peep.Crawler;
+using Peep.Crawler.Application.Requests.Commands.QueueCrawl;
+using Peep.Crawler.Application.Services;
 using Peep.Crawler.Messages;
 
 namespace Peep.Tests.Crawler
@@ -16,7 +20,7 @@ namespace Peep.Tests.Crawler
     public class QueueCrawlHandlerTests
     {
         [TestMethod]
-        public async Task Enqueues_Job_To_JobQueue()
+        public async Task Uses_Mediator_Passing_QueueCrawlRequest_With_Job()
         {
             const string JOB_ID = "id";
             var job = new IdentifiableCrawlJob
@@ -25,13 +29,13 @@ namespace Peep.Tests.Crawler
             };
             
             var harness = new InMemoryTestHarness();
-            var jobQueue = new Mock<IJobQueue>();
-            var consumerHarness = harness.Consumer<CrawlQueuedConsumer>(() => new CrawlQueuedConsumer(jobQueue.Object));
+            var mediator = new Mock<IMediator>();
+            var consumerHarness = harness.Consumer(() => new CrawlQueuedConsumer(mediator.Object));
 
             await harness.Start();
             try
             {
-                await harness.InputQueueSendEndpoint.Send<CrawlQueued>(
+                await harness.InputQueueSendEndpoint.Send(
                     new CrawlQueued
                     {
                         Job = job
@@ -40,10 +44,13 @@ namespace Peep.Tests.Crawler
 
                 await consumerHarness.Consumed.Any<CrawlQueued>();
                 
-                jobQueue.Verify(
-                    mock => mock.Enqueue(
-                        It.Is<IdentifiableCrawlJob>(j => j.Id == JOB_ID)), 
-                    Times.Once());
+                mediator
+                    .Verify(
+                        mock => mock
+                            .Send(
+                                It.Is<QueueCrawlRequest>(value => value.Job.Id == job.Id),
+                                It.IsAny<CancellationToken>()),
+                        Times.Once());
             }
             finally
             {
