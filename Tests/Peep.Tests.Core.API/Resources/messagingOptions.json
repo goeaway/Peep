@@ -1,0 +1,8 @@
+﻿{
+  "Messaging": {
+    "Hostname": "host",
+    "Port": 1,
+    "Username": "user",
+    "Password": "password"
+  }
+}

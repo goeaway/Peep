@@ -180,7 +180,7 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
                         CrawlCompletionReason.Cancelled,
                     CrawlCount = await _filterManager.GetCount(),
                     DataJson = JsonConvert.SerializeObject(data),
-                    ErrorMessage = string.Join(",", errors.Select(e => e.Exception.Message))
+                    ErrorMessage = string.Join(",", errors.Select(e => e.Message))
                 }, stoppingToken);
 
                 // removing running job item

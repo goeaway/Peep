@@ -49,7 +49,7 @@ namespace Peep.Core.Infrastructure.Data
 
             var result = new CrawlErrors();
             result.AddRange(values
-                .Select(value => JsonConvert.DeserializeObject<CrawlError>(value)));
+                .SelectMany(value => JsonConvert.DeserializeObject<CrawlErrors>(value.ToString())));
 
             return result;
         }

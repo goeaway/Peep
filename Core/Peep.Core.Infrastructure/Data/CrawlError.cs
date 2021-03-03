@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Dynamic;
 
 namespace Peep.Core.Infrastructure.Data
 {
     public class CrawlError
     {
-        public Exception Exception { get; set; }
-        
+        public string Message { get; set; }
+        public string StackTrace { get; set; }
     }
 }

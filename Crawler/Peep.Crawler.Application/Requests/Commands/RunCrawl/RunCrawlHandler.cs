@@ -96,7 +96,7 @@ namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
                     await _dataSink.Push(job.Id, crawlerRunException.CrawlProgress.Data);
                 }
                 
-                await _errorSink.Push(job.Id, new CrawlError {Exception = e});
+                await _errorSink.Push(job.Id, new CrawlError { Message = e.Message, StackTrace = e.StackTrace });
                 
                 _logger.Error(e, "Error occurred during crawl");
             }
