@@ -31,7 +31,7 @@ namespace Peep.Crawler
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddLogger();
+                    services.AddLogger(hostContext.Configuration);
                     services.AddCrawler();
                     services.AddCrawlerOptions(hostContext.Configuration);
                     services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);

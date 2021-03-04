@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="3.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="Moq" Version="4.16.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.0" />
@@ -16,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\API\Peep.API.Application\Peep.API.Application.csproj" />
-    <ProjectReference Include="..\Peep.Tests.API.Core\Peep.Tests.API.Core.csproj" />
+    <ProjectReference Include="..\..\API\Peep.API\Peep.API.csproj" />
   </ItemGroup>
 
 </Project>

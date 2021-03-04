@@ -19,7 +19,7 @@ namespace Peep.API.Persistence
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<QueuedJob>().ToTable("QueuedJobs");
-            modelBuilder.Entity<RunningJob>().ToTable("RunningJob");
+            modelBuilder.Entity<RunningJob>().ToTable("RunningJobs");
             modelBuilder.Entity<CompletedJob>().ToTable("CompletedJobs");
         }
     }

@@ -81,14 +81,16 @@ namespace Peep.API
             });
 
             services.AddDbContext<PeepApiContext>(
-                options => options.UseInMemoryDatabase("PeepApiDatabase"));
+                options => options.UseNpgsql(
+                    Configuration.GetConnectionString("app")));
 
             services.AddTransient<ICrawlDataSinkManager<ExtractedData>, CrawlDataSinkManager>();
             services.AddTransient<ICrawlDataSinkManager<CrawlErrors>, CrawlErrorSinkManager>();
             services.AddTransient<ICrawlQueueManager, CrawlQueueManager>();
             services.AddTransient<ICrawlFilterManager, CrawlFilterManager>();
             
-            services.AddLogger();
+            services.AddLogger(Configuration);
+            
             services.AddCrawlCancellationTokenProvider();
             services.AddNowProvider();
             services.AddAutoMapper(typeof(QueuedJob));
