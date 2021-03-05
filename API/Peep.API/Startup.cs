@@ -81,8 +81,9 @@ namespace Peep.API
             });
 
             services.AddDbContext<PeepApiContext>(
-                options => options.UseNpgsql(
-                    Configuration.GetConnectionString("app")));
+                options => options.UseMySql(
+                    Configuration.GetConnectionString("db"),
+                    x => x.MigrationsAssembly("Peep.API.Persistence")));
 
             services.AddTransient<ICrawlDataSinkManager<ExtractedData>, CrawlDataSinkManager>();
             services.AddTransient<ICrawlDataSinkManager<CrawlErrors>, CrawlErrorSinkManager>();
@@ -98,13 +99,13 @@ namespace Peep.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, PeepApiContext context)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            
             app.UseHttpsRedirection();
             app.UseExceptionHandler(ExceptionHandler);
 

@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Peep.API.Persistence;
@@ -11,7 +12,12 @@ namespace Peep.API
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var host = CreateHostBuilder(args).Build();
+
+            var context = host.Services.GetRequiredService<PeepApiContext>();
+            context.Database.Migrate();
+                
+            host.Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

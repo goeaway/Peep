@@ -18,7 +18,7 @@ services:
     depends_on:
       - rabbitmq
       - redis
-      - postgres
+      - db
     networks:
       - app_bridge
 
@@ -33,7 +33,7 @@ services:
     depends_on:
       - rabbitmq
       - redis
-      - postgres
+      - db
     networks:
       - app_bridge
 
@@ -54,11 +54,12 @@ services:
     networks:
       - app_bridge
         
-  postgres:
-    image: postgres
-    container_name: postgres
+  db:
+    image: mysql
+    container_name: db
     environment:
-      POSTGRES_PASSWORD: password
+      MYSQL_DATABASE: peep
+      MYSQL_ROOT_PASSWORD: password
     networks:
       - app_bridge
       
