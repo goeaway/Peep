@@ -6,11 +6,14 @@ using Peep.Filtering;
 using Peep.Queueing;
 using Peep.Robots;
 using Peep.PageActions;
+using Serilog;
 
 namespace Peep
 {
     public class CrawlerOptions
     {
+        public ILogger Logger { get; set; }
+            = new LoggerConfiguration().CreateLogger();
         public IBrowserAdapterFactory BrowserAdapterFactory { get; set; }
             = new PuppeteerSharpBrowserAdapterFactory();
         public IDataExtractor DataExtractor { get; set; }

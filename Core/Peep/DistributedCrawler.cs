@@ -40,6 +40,11 @@ namespace Peep
             {
                 throw new CrawlerOptionsException("Robot Parser required");
             }
+
+            if (options.Logger == null)
+            {
+                throw new CrawlerOptionsException("Logger required");
+            }
         }
 
         public ChannelReader<CrawlProgress> Crawl(
@@ -185,24 +190,24 @@ namespace Peep
                 {
                     continue;
                 }
+                
+                await filter.Add(next.AbsoluteUri);
 
                 var response = await browserAdapter.NavigateToAsync(next);
 
                 if(response && !cancellationToken.IsCancellationRequested)
                 {
-                    await filter.Add(next.AbsoluteUri);
-
                     // perform any page actions to get the page in a certain state before extracting content
                     if(job.PageActions != null && job.PageActions.Any())
                     {
-                        foreach(var paction in job.PageActions)
+                        foreach(var pageAction in job.PageActions)
                         {
                             // only perform if the action if the page action doesn't have a uri regex, or it matches the current page
-                            if((string.IsNullOrWhiteSpace(paction.UriRegex) || Regex.IsMatch(next.AbsoluteUri, paction.UriRegex)) && !cancellationToken.IsCancellationRequested)
+                            if((string.IsNullOrWhiteSpace(pageAction.UriRegex) || Regex.IsMatch(next.AbsoluteUri, pageAction.UriRegex)) && !cancellationToken.IsCancellationRequested)
                             {
                                 // retry here
                                 await pageActionRetryPolicy
-                                    .ExecuteAsync(cT => _crawlerOptions.PageActionPerformer.Perform(paction, browserAdapter), cancellationToken);
+                                    .ExecuteAsync(cT => _crawlerOptions.PageActionPerformer.Perform(pageAction, browserAdapter), cancellationToken);
                             }
                         }
                     }
