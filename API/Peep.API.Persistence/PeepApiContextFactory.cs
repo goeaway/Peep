@@ -8,7 +8,7 @@ namespace Peep.API.Persistence
         public PeepApiContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<PeepApiContext>();
-            optionsBuilder.UseMySql("server=db;user=root;password=password;database=peep");
+            optionsBuilder.UseNpgsql("Host=db;Database=peep;Username=postgres;Password=password");
             return new PeepApiContext(optionsBuilder.Options);
         }
     }

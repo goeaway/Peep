@@ -1,21 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
-using System.Threading.Channels;
+using MassTransit;
 using MediatR;
-using Peep.Core.API.Providers;
-using Peep.Core.Infrastructure.Data;
+using Peep.Core.Infrastructure.Messages;
 using Peep.Crawler;
-using Peep.Crawler.Application.Options;
 using Peep.Crawler.Application.Requests.Commands.RunCrawl;
 using Peep.Crawler.Application.Services;
-using Peep.Data;
-using Peep.Exceptions;
-using Peep.Filtering;
-using Peep.Queueing;
 using Serilog;
 
 namespace Peep.Tests.Crawler
@@ -30,11 +23,13 @@ namespace Peep.Tests.Crawler
             var logger = new LoggerConfiguration().CreateLogger();
             var jobQueue = new Mock<IJobQueue>();
             var mediator = new Mock<IMediator>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
             
             var service = new Worker(
                     logger,
                     jobQueue.Object,
-                    mediator.Object
+                    mediator.Object,
+                    publishEndpoint.Object
                 );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -53,15 +48,16 @@ namespace Peep.Tests.Crawler
         [TestMethod]
         public async Task Calls_Mediator_With_RunCrawlRequest_And_Job()
         {
-            var PASSED_JOB = new IdentifiableCrawlJob();
+            var passedJob = new IdentifiableCrawlJob();
             
             var logger = new LoggerConfiguration().CreateLogger();
             var jobQueue = new Mock<IJobQueue>();
             jobQueue
                 .SetupSequence(
-                    mock => mock.TryDequeue(out PASSED_JOB))
+                    mock => mock.TryDequeue(out passedJob))
                 .Returns(true)
                 .Returns(false);
+            var publishEndpoint = new Mock<IPublishEndpoint>();
             
             var mediator = new Mock<IMediator>();
             mediator
@@ -75,7 +71,8 @@ namespace Peep.Tests.Crawler
             var service = new Worker(
                 logger,
                 jobQueue.Object,
-                mediator.Object
+                mediator.Object,
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -89,9 +86,103 @@ namespace Peep.Tests.Crawler
             mediator.Verify(
                 mock => mock
                     .Send(
-                        It.Is<RunCrawlRequest>(value => value.Job == PASSED_JOB), 
+                        It.Is<RunCrawlRequest>(value => value.Job == passedJob), 
                         It.IsAny<CancellationToken>()), 
                 Times.AtLeast(1));
+        }
+        
+        [TestMethod]
+        public async Task Sends_CrawlerStarted_Message_Before_Crawling()
+        {
+            var passedJob = new IdentifiableCrawlJob();
+            
+            var logger = new LoggerConfiguration().CreateLogger();
+            var jobQueue = new Mock<IJobQueue>();
+            jobQueue
+                .SetupSequence(
+                    mock => mock.TryDequeue(out passedJob))
+                .Returns(true)
+                .Returns(false);
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            
+            var mediator = new Mock<IMediator>();
+            mediator
+                .Setup(
+                    mock => mock
+                        .Send(
+                            It.IsAny<IRequest>(),
+                            It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Unit.Value);
+            
+            var service = new Worker(
+                logger,
+                jobQueue.Object,
+                mediator.Object,
+                publishEndpoint.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            await service.StartAsync(cancellationTokenSource.Token);
+
+            await Task.Delay(200);
+
+            await service.StopAsync(cancellationTokenSource.Token);
+            
+            publishEndpoint
+                .Verify(
+                    mock => mock
+                        .Publish(
+                            It.Is<CrawlerStarted>(value => value.CrawlerId == Environment.MachineName && value.JobId == passedJob.Id),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once());
+        }
+        
+        [TestMethod]
+        public async Task Sends_CrawlerFinished_Message_After_Crawling()
+        {
+            var passedJob = new IdentifiableCrawlJob();
+            
+            var logger = new LoggerConfiguration().CreateLogger();
+            var jobQueue = new Mock<IJobQueue>();
+            jobQueue
+                .SetupSequence(
+                    mock => mock.TryDequeue(out passedJob))
+                .Returns(true)
+                .Returns(false);
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            
+            var mediator = new Mock<IMediator>();
+            mediator
+                .Setup(
+                    mock => mock
+                        .Send(
+                            It.IsAny<IRequest>(),
+                            It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Unit.Value);
+            
+            var service = new Worker(
+                logger,
+                jobQueue.Object,
+                mediator.Object,
+                publishEndpoint.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            await service.StartAsync(cancellationTokenSource.Token);
+
+            await Task.Delay(200);
+
+            await service.StopAsync(cancellationTokenSource.Token);
+            
+            publishEndpoint
+                .Verify(
+                    mock => mock
+                        .Publish(
+                            It.Is<CrawlerFinished>(value => value.CrawlerId == Environment.MachineName && value.JobId == passedJob.Id),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once());
         }
     }
 }

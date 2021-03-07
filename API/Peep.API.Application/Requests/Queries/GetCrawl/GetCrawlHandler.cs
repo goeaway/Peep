@@ -50,7 +50,9 @@ namespace Peep.API.Application.Requests.Queries.GetCrawl
             // check completed table
             var foundCompleted = await _context.CompletedJobs
                 .Include(cj => cj.CompletedJobData)
-                .FirstOrDefaultAsync(cj => cj.Id == request.CrawlId);
+                .FirstOrDefaultAsync(
+                    cj => cj.Id == request.CrawlId,
+                    cancellationToken);
             if (foundCompleted != null)
             {
                 return _mapper.Map<GetCrawlResponseDto>(foundCompleted);

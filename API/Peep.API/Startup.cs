@@ -21,6 +21,8 @@ using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Queuing;
 using Peep.Core.Infrastructure.Filtering;
 using MassTransit;
+using Peep.API.Application.Managers;
+using Peep.API.Application.Messages;
 using Peep.Core.API;
 using Peep.Data;
 
@@ -43,6 +45,9 @@ namespace Peep.API
 
             services.AddMassTransit(options => 
             {
+                options.AddConsumer<CrawlerStartedConsumer>();
+                options.AddConsumer<CrawlerFinishedConsumer>();
+                
                 options.UsingRabbitMq((ctx, cfg) => 
                 {
                     cfg.Host(messagingOptions.Hostname, "/", h =>
@@ -50,6 +55,24 @@ namespace Peep.API
                         h.Username(messagingOptions.Username);
                         h.Password(messagingOptions.Password);
                     });
+                    
+                    cfg.ReceiveEndpoint(
+                        "crawl-started", 
+                        e =>
+                        {
+                            e.Consumer(
+                                () => new CrawlerStartedConsumer(ctx.GetRequiredService<IMediator>())
+                            );
+                        });
+
+                    cfg.ReceiveEndpoint(
+                        "crawl-finished",
+                        e =>
+                        {
+                            e.Consumer(
+                                () => new CrawlerFinishedConsumer(ctx.GetRequiredService<IMediator>())
+                            );
+                        });
                 });
             });
 
@@ -71,14 +94,14 @@ namespace Peep.API
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                 var context = scope.ServiceProvider.GetRequiredService<PeepApiContext>();
                 
-                return new CrawlerManagerService(
+                return new CrawlRunnerService(
                     logger,
                     mediator,
                     context);
             });
 
             services.AddDbContext<PeepApiContext>(
-                options => options.UseMySql(
+                options => options.UseNpgsql(
                     Configuration.GetConnectionString("db"),
                     x => x.MigrationsAssembly("Peep.API.Persistence")));
 
@@ -86,6 +109,8 @@ namespace Peep.API
             services.AddTransient<ICrawlDataSinkManager<CrawlErrors>, CrawlErrorSinkManager>();
             services.AddTransient<ICrawlQueueManager, CrawlQueueManager>();
             services.AddTransient<ICrawlFilterManager, CrawlFilterManager>();
+            
+            services.AddSingleton<ICrawlerManager>(new CrawlerManager());
             
             services.AddLogger(Configuration);
             
@@ -96,7 +121,7 @@ namespace Peep.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, PeepApiContext context)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {

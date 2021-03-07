@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MassTransit;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Peep.API.Application.Managers;
 using Peep.API.Application.Requests.Commands.RunCrawl;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
@@ -43,6 +44,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -57,7 +59,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -98,6 +101,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
 
             await using var context = Setup.CreateContext();
 
@@ -110,7 +114,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -157,6 +162,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -169,7 +175,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -214,6 +221,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -226,7 +234,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -268,6 +277,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -280,7 +290,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -322,6 +333,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -334,7 +346,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -390,6 +403,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
             
@@ -402,7 +416,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -444,6 +459,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
             
@@ -462,7 +478,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -527,6 +544,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                     { new Uri(DATA_URI), new List<string> { DATA_1, DATA_2 }}
                 });
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
                 
@@ -539,7 +557,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -592,6 +611,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
                 
@@ -604,7 +624,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -646,6 +667,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -658,7 +680,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -700,6 +723,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
                 
@@ -712,7 +736,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -754,6 +779,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var queueManager = new Mock<ICrawlQueueManager>();
             var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
             var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
                 
@@ -766,7 +792,8 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 errorSinkManager.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object
+                publishEndpoint.Object,
+                crawlerManager.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -778,6 +805,185 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 .Verify(
                     mock => mock.DisposeOfToken(JOB_ID),
                     Times.Once());
+        }
+        
+        [TestMethod]
+        public async Task CrawlerManager_Is_Used_To_Wait_For_Crawlers_To_Finish()
+        {
+            const string JOB_ID = "id";
+
+            var seeds = new List<Uri>
+            {
+                new Uri("http://localhost")
+            };
+
+            var job = new QueuedJob
+            {
+                Id = JOB_ID
+            };
+
+            var jobData = new StoppableCrawlJob
+            {
+                Seeds = seeds
+            };
+
+            var logger = new LoggerConfiguration().CreateLogger();
+            var nowProvider = new NowProvider();
+            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            var filterManager = new Mock<ICrawlFilterManager>();
+            var queueManager = new Mock<ICrawlQueueManager>();
+            var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
+            var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
+            
+            await using var context = Setup.CreateContext();
+                
+            var handler = new RunCrawlHandler(
+                context,
+                logger,
+                nowProvider,
+                cancellationTokenProvider.Object,
+                dataSinkManager.Object,
+                errorSinkManager.Object,
+                filterManager.Object,
+                queueManager.Object,
+                publishEndpoint.Object,
+                crawlerManager.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            cancellationTokenSource.CancelAfter(500);
+            await handler.Handle(new RunCrawlRequest { Job = job, JobData = jobData }, cancellationTokenSource.Token); 
+            
+            crawlerManager
+                .Verify(
+                    mock => mock.WaitAllFinished(JOB_ID, It.IsAny<TimeSpan>()),
+                    Times.Once());
+        }
+        
+        [TestMethod]
+        public async Task CrawlerManager_Adds_Timeout_Error_To_Completed_Job_If_Timeout_Occurred_While_Waiting()
+        {
+            const string JOB_ID = "id";
+            const string TIMEOUT_MESSAGE = "timeout";
+
+            var seeds = new List<Uri>
+            {
+                new Uri("http://localhost")
+            };
+
+            var job = new QueuedJob
+            {
+                Id = JOB_ID
+            };
+
+            var jobData = new StoppableCrawlJob
+            {
+                Seeds = seeds
+            };
+
+            var logger = new LoggerConfiguration().CreateLogger();
+            var nowProvider = new NowProvider();
+            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            var filterManager = new Mock<ICrawlFilterManager>();
+            var queueManager = new Mock<ICrawlQueueManager>();
+            var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
+            var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            var crawlerManager = new Mock<ICrawlerManager>();
+            crawlerManager
+                .Setup(
+                    mock => mock.WaitAllFinished(JOB_ID, It.IsAny<TimeSpan>()))
+                .ThrowsAsync(new TimeoutException(TIMEOUT_MESSAGE));
+            
+            await using var context = Setup.CreateContext();
+                
+            var handler = new RunCrawlHandler(
+                context,
+                logger,
+                nowProvider,
+                cancellationTokenProvider.Object,
+                dataSinkManager.Object,
+                errorSinkManager.Object,
+                filterManager.Object,
+                queueManager.Object,
+                publishEndpoint.Object,
+                crawlerManager.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            cancellationTokenSource.CancelAfter(500);
+            await handler.Handle(new RunCrawlRequest { Job = job, JobData = jobData }, cancellationTokenSource.Token); 
+            
+            // check completed job has something about timeout error
+            var completed = context.CompletedJobs.First();
+            
+            Assert.AreEqual(TIMEOUT_MESSAGE, completed.ErrorMessage);
+        }
+        
+        [TestMethod]
+        public async Task ErrorsSink_Errors_Are_Added_To_CompletedJob()
+        {
+            const string JOB_ID = "id";
+            const string ERROR_1 = "error 1";
+            const string ERROR_2 = "error 2;";
+
+            var seeds = new List<Uri>
+            {
+                new Uri("http://localhost")
+            };
+
+            var job = new QueuedJob
+            {
+                Id = JOB_ID
+            };
+
+            var jobData = new StoppableCrawlJob
+            {
+                Seeds = seeds
+            };
+
+            var logger = new LoggerConfiguration().CreateLogger();
+            var nowProvider = new NowProvider();
+            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            var filterManager = new Mock<ICrawlFilterManager>();
+            var queueManager = new Mock<ICrawlQueueManager>();
+            var dataSinkManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
+            var errorSinkManager = new Mock<ICrawlDataSinkManager<CrawlErrors>>();
+            errorSinkManager
+                .Setup(
+                    mock => mock.GetData(JOB_ID))
+                .ReturnsAsync(new CrawlErrors { new CrawlError { Message = ERROR_1 }, new CrawlError { Message = ERROR_2 }});
+            var crawlerManager = new Mock<ICrawlerManager>();
+            
+            await using var context = Setup.CreateContext();
+                
+            var handler = new RunCrawlHandler(
+                context,
+                logger,
+                nowProvider,
+                cancellationTokenProvider.Object,
+                dataSinkManager.Object,
+                errorSinkManager.Object,
+                filterManager.Object,
+                queueManager.Object,
+                publishEndpoint.Object,
+                crawlerManager.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            cancellationTokenSource.CancelAfter(500);
+            await handler.Handle(new RunCrawlRequest { Job = job, JobData = jobData }, cancellationTokenSource.Token); 
+            
+            // check completed job has something about timeout error
+            var completed = context.CompletedJobs.First();
+            
+            Assert.AreEqual(ERROR_1 + ", " + ERROR_2, completed.ErrorMessage);
         }
     }
 }

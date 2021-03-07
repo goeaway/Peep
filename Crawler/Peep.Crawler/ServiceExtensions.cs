@@ -3,10 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using NpgsqlTypes;
-using Peep.Core;
-using Peep.Core.API.Providers;
 using Peep.Crawler.Application.Options;
 using Serilog.Sinks.PostgreSQL;
 
@@ -19,13 +16,27 @@ namespace Peep.Crawler
             const string CONSOLE_OUTPUT_TEMPLATE = 
                 "[{Timestamp:HH:mm:ss} {Level:u3}] {JobId} {Message:lj}{NewLine}{Exception}";
 
+            var columnWriters = new Dictionary<string, ColumnWriterBase>
+            {
+                {"message", new RenderedMessageColumnWriter(NpgsqlDbType.Text) },
+                {"message_template", new MessageTemplateColumnWriter(NpgsqlDbType.Text) },
+                {"level", new LevelColumnWriter(true, NpgsqlDbType.Varchar) },
+                {"raise_date", new TimestampColumnWriter(NpgsqlDbType.Timestamp) },
+                {"exception", new ExceptionColumnWriter(NpgsqlDbType.Text) },
+                {"properties", new LogEventSerializedColumnWriter(NpgsqlDbType.Jsonb) },
+                {"props_test", new PropertiesColumnWriter(NpgsqlDbType.Jsonb) },
+                {"context", new SinglePropertyColumnWriter("Context", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") }
+            };
+            
             var loggerConfig = new LoggerConfiguration()
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("Context", Environment.MachineName)
                 .WriteTo.Console(outputTemplate: CONSOLE_OUTPUT_TEMPLATE)
-                .WriteTo.MySQL(
+                .WriteTo.PostgreSQL(
                     configuration.GetConnectionString("db"),
-                    configuration.GetSection("Logging")["TableName"]);
+                    configuration.GetSection("Logging")["TableName"],
+                    columnWriters,
+                    needAutoCreateTable: true);
 
             services.AddSingleton<ILogger>(loggerConfig.CreateLogger());
             return services;

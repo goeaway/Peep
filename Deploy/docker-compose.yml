@@ -13,6 +13,8 @@ services:
         ASPNET_VERSION: 3.1
         SDK_VERSION: 3.1
     container_name: peepapi_container
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
     ports:
       - "8080:80"
     depends_on:
@@ -29,6 +31,8 @@ services:
       args:
         ASPNET_VERSION: 3.1
         SDK_VERSION: 3.1
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
     depends_on:
       - rabbitmq
       - redis
@@ -54,11 +58,10 @@ services:
       - app_bridge
         
   db:
-    image: mysql
+    image: postgres
     container_name: db
     environment:
-      MYSQL_DATABASE: peep
-      MYSQL_ROOT_PASSWORD: password
+      POSTGRES_PASSWORD: password
     networks:
       - app_bridge
       
