@@ -29,7 +29,6 @@ services:
       args:
         ASPNET_VERSION: 3.1
         SDK_VERSION: 3.1
-    scale: 3
     depends_on:
       - rabbitmq
       - redis

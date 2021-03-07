@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MassTransit;
 using MediatR;
-using Newtonsoft.Json;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Persistence;
@@ -161,12 +161,11 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
                 
                 // crawlers will have placed their found data in cache as events
                 // we should gather them all up for the finished data set
-                var data = await _dataManager.GetData(job.Id);
                 var errors = await _errorManager.GetData(job.Id) ?? new CrawlErrors();
 
                 _logger.Information("Saving data");
                 // create and save completed job with data
-                await _context.CompletedJobs.AddAsync(new CompletedJob
+                var completedJob = new CompletedJob
                 {
                     Id = job.Id,
                     DateQueued = job.DateQueued,
@@ -179,9 +178,12 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
                         errors.Any() ? CrawlCompletionReason.Error :
                         CrawlCompletionReason.Cancelled,
                     CrawlCount = await _filterManager.GetCount(),
-                    DataJson = JsonConvert.SerializeObject(data),
                     ErrorMessage = string.Join(",", errors.Select(e => e.Message))
-                }, stoppingToken);
+                };
+
+                completedJob.CompletedJobData = await GetData(job.Id, completedJob);
+                
+                await _context.CompletedJobs.AddAsync(completedJob, stoppingToken);
 
                 // removing running job item
                 _logger.Information("Cleaning up");
@@ -197,6 +199,35 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
 
                 _crawlCancellationTokenProvider.DisposeOfToken(job.Id);
             }
+        }
+
+        private async Task<List<CompletedJobData>> GetData(string jobId, CompletedJob completedJob)
+        {
+            var raw = await _dataManager.GetData(jobId);
+
+            var result = new List<CompletedJobData>();
+
+            if (raw == null)
+            {
+                return result;
+            }
+            
+            foreach (var (key, value) in raw)
+            {
+                result
+                    .AddRange(
+                        value
+                            .Select(
+                                item => new CompletedJobData
+                                {
+                                    Source = key.AbsoluteUri, 
+                                    Value = item, 
+                                    CompletedJobId = completedJob.Id,
+                                    CompletedJob = completedJob
+                                }));
+            }
+
+            return result;
         }
     }
 }

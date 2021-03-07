@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using Peep.Core.API;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure.Data;
 using Peep.Crawler.Application.Options;
@@ -14,7 +15,7 @@ using Serilog.Context;
 
 namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
 {
-    public class RunCrawlHandler : IRequestHandler<RunCrawlRequest, Unit>
+    public class RunCrawlHandler : IRequestHandler<RunCrawlRequest, Either<Unit, ErrorResponseDTO>>
     {
         private readonly ILogger _logger;
         private readonly ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
@@ -45,7 +46,7 @@ namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
             _crawlConfigOptions = crawlConfigOptions;
         }
 
-        public async Task<Unit> Handle(RunCrawlRequest request, CancellationToken cancellationToken)
+        public async Task<Either<Unit, ErrorResponseDTO>> Handle(RunCrawlRequest request, CancellationToken cancellationToken)
         {
             using(LogContext.PushProperty("JobId", request.Job.Id))
             {

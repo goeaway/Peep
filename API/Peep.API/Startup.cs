@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Reflection;
 using FluentValidation.AspNetCore;
 using MediatR;
@@ -10,13 +9,11 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
-using Peep.API.Models.DTOs;
 using Microsoft.AspNetCore.Diagnostics;
 using Peep.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Peep.API.Models.Entities;
 using Peep.API.Application.Services;
-using Peep.Core.API.Exceptions;
 using Peep.Core.API.Behaviours;
 using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.Core.Infrastructure;
@@ -136,23 +133,7 @@ namespace Peep.API
                     Message = exception.Message
                 };
 
-                switch (exception)
-                {
-                    case RequestValidationFailedException failedException:
-                        ctx.Response.StatusCode = 400;
-                        errorResponse.Message = "Validation error";
-                        errorResponse.Errors = failedException.Failures.Select(f => f.ErrorMessage);
-                        logger.Error("Validation error occurred: {Errors}", string.Join(", ", errorResponse.Errors));
-                        break;
-                    case RequestFailedException rfException:
-                        ctx.Response.StatusCode = (int)rfException.StatusCode;
-                        errorResponse.Message = rfException.Message;
-                        logger.Error("Request failed ({StatusCode}): {Error}", rfException.StatusCode, rfException.Message);
-                        break;
-                    default:
-                        logger.Error(exception, "Error occurred when processing request {uri}", uri);
-                        break;
-                }
+                logger.Error(exception, "Error occurred when processing request {uri}", uri);
 
                 await ctx.Response.WriteAsync(JsonConvert.SerializeObject(errorResponse));
             });

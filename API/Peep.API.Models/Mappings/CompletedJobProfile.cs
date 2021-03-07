@@ -5,6 +5,7 @@ using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Peep.API.Models.Mappings
@@ -13,13 +14,17 @@ namespace Peep.API.Models.Mappings
     {
         public CompletedJobProfile()
         {
-            CreateMap<CompletedJob, GetCrawlResponseDTO>()
+            CreateMap<CompletedJob, GetCrawlResponseDto>()
                 .ForMember(
                     dto => dto.Data,
                     opt =>
                         opt.MapFrom(cj =>
-                            JsonConvert
-                                .DeserializeObject<Dictionary<Uri, IEnumerable<string>>>(cj.DataJson)))
+                            cj.CompletedJobData
+                              .GroupBy(g => g.Source)
+                              .ToDictionary(
+                                  k => new Uri(k.Key), 
+                                  v => v.Select(value => value.Value))
+                            ))
                 .ForMember(
                     dto => dto.State,
                     opt =>

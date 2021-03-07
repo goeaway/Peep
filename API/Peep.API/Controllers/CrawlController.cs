@@ -20,21 +20,38 @@ namespace Peep.API.Controllers
         }
 
         [HttpGet("{crawlId}")]
-        public Task<GetCrawlResponseDTO> Get(string crawlId)
+        public async Task<IActionResult> Get(string crawlId)
         {
-            return _mediator.Send(new GetCrawlRequest(crawlId));
+            var result = await _mediator
+                .Send(new GetCrawlRequest(crawlId));
+
+            return result.Match(
+                Ok,
+                error => StatusCode((int)error.StatusCode, error)
+            );
         }
 
         [HttpPost]
-        public Task<QueueCrawlResponseDTO> Queue(StoppableCrawlJob job)
+        public async Task<IActionResult> Queue(StoppableCrawlJob job)
         {
-            return _mediator.Send(new QueueCrawlRequest(job));
+            var result = await _mediator.Send(new QueueCrawlRequest(job));
+
+            return result.Match(
+                Ok,
+                error => StatusCode((int) error.StatusCode, error)
+            );
         }
 
         [HttpPost("cancel/{crawlId}")]
-        public Task<CancelCrawlResponseDTO> Cancel(string crawlId)
+        public async Task<IActionResult> Cancel(string crawlId)
         {
-            return _mediator.Send(new CancelCrawlRequest(crawlId));
+            var result = await _mediator.Send(new CancelCrawlRequest(crawlId));
+
+            return result
+                .Match(
+                    Ok,
+                    error => StatusCode((int)error.StatusCode, error)    
+                );
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Peep.API.Models.Mappings
         {
             AllowNullCollections = false;
 
-            CreateMap<QueuedJob, GetCrawlResponseDTO>()
+            CreateMap<QueuedJob, GetCrawlResponseDto>()
                 .ForMember(dto => dto.Data, opt => opt.MapFrom(qj => new Dictionary<Uri, IEnumerable<string>>()));
         }
     }

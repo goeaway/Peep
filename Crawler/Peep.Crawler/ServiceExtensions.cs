@@ -20,7 +20,6 @@ namespace Peep.Crawler
                 "[{Timestamp:HH:mm:ss} {Level:u3}] {JobId} {Message:lj}{NewLine}{Exception}";
 
             var loggerConfig = new LoggerConfiguration()
-                .MinimumLevel.Debug()
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("Context", Environment.MachineName)
                 .WriteTo.Console(outputTemplate: CONSOLE_OUTPUT_TEMPLATE)
@@ -34,20 +33,8 @@ namespace Peep.Crawler
 
         public static IServiceCollection AddCrawler(this IServiceCollection services)
         {
-            services.AddTransient<ICrawler, DistributedCrawler>(provider =>
-            {
-                var options = new CrawlerOptions
-                {
-                    Logger = provider.GetRequiredService<ILogger>()
-                };
-                return new DistributedCrawler(options);
-            });
+            services.AddTransient<ICrawler, DistributedCrawler>();
             return services;
-        }
-
-        public static IServiceCollection AddNowProvider(this IServiceCollection services)
-        {
-            return services.AddTransient<INowProvider, NowProvider>();
         }
 
         public static IServiceCollection AddCrawlerOptions(

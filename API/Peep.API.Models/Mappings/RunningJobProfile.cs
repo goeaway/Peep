@@ -13,7 +13,7 @@ namespace Peep.API.Models.Mappings
     {
         public RunningJobProfile()
         {
-            CreateMap<RunningJob, GetCrawlResponseDTO>()
+            CreateMap<RunningJob, GetCrawlResponseDto>()
                 .ForMember(
                     dto => dto.State,
                     opt =>

@@ -14,10 +14,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Peep.Core.API;
 
 namespace Peep.API.Application.Requests.Commands.QueueCrawl
 {
-    public class QueueCrawlHandler : IRequestHandler<QueueCrawlRequest, QueueCrawlResponseDTO>
+    public class QueueCrawlHandler : IRequestHandler<QueueCrawlRequest, Either<QueueCrawlResponseDto, ErrorResponseDTO>>
     {
         private readonly PeepApiContext _context;
         private readonly INowProvider _nowProvider;
@@ -28,17 +29,13 @@ namespace Peep.API.Application.Requests.Commands.QueueCrawl
             _nowProvider = nowProvider;
         }
 
-        public async Task<QueueCrawlResponseDTO> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
+        public async Task<Either<QueueCrawlResponseDto, ErrorResponseDTO>> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
         {
             // force the crawl to have some upper limit stop conditions
-            if (request.Job.StopConditions == null)
-            {
-                request.Job.StopConditions = GetRequiredStopConditions();
-            }
-            else
-            {
-                request.Job.StopConditions = request.Job.StopConditions.Concat(GetRequiredStopConditions());
-            }
+            request.Job.StopConditions = 
+                request.Job.StopConditions == null 
+                    ? GetRequiredStopConditions() 
+                    : request.Job.StopConditions.Concat(GetRequiredStopConditions());
 
             var queuedJob = new QueuedJob
             {
@@ -47,17 +44,17 @@ namespace Peep.API.Application.Requests.Commands.QueueCrawl
                 Id = Guid.NewGuid().ToString()
             };
 
-            _context.QueuedJobs.Add(queuedJob);
+            await _context.QueuedJobs.AddAsync(queuedJob, cancellationToken);
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
 
-            return new QueueCrawlResponseDTO
+            return new QueueCrawlResponseDto
             {
                 CrawlId = queuedJob.Id
             };
         }
 
-        private IEnumerable<ICrawlStopCondition> GetRequiredStopConditions()
+        private static IEnumerable<ICrawlStopCondition> GetRequiredStopConditions()
         {
             return new List<ICrawlStopCondition>
                 {

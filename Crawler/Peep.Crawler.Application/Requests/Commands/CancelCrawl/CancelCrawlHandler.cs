@@ -2,12 +2,13 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using Peep.Core.API;
 using Peep.Core.API.Providers;
 using Peep.Crawler.Application.Services;
 
 namespace Peep.Crawler.Application.Requests.Commands.CancelCrawl
 {
-    public class CancelCrawlHandler : IRequestHandler<CancelCrawlRequest, Unit>
+    public class CancelCrawlHandler : IRequestHandler<CancelCrawlRequest, Either<Unit, ErrorResponseDTO>>
     {
         private readonly IJobQueue _jobQueue;
         private readonly ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
@@ -20,16 +21,16 @@ namespace Peep.Crawler.Application.Requests.Commands.CancelCrawl
             _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
         }
 
-        public Task<Unit> Handle(CancelCrawlRequest request, CancellationToken cancellationToken)
+        public Task<Either<Unit, ErrorResponseDTO>> Handle(CancelCrawlRequest request, CancellationToken cancellationToken)
         {
             if (_jobQueue.TryRemove(request.CrawlId))
             {
-                return Task.FromResult(Unit.Value);
+                return Task.FromResult(new Either<Unit, ErrorResponseDTO>(Unit.Value));
             }
 
             _crawlCancellationTokenProvider.CancelJob(request.CrawlId);
 
-            return Task.FromResult(Unit.Value);
+            return Task.FromResult(new Either<Unit, ErrorResponseDTO>(Unit.Value));
         }
     }
 }

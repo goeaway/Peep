@@ -3,11 +3,10 @@ using Newtonsoft.Json.Converters;
 using Peep.API.Models.Enums;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Peep.API.Models.DTOs
 {
-    public class GetCrawlResponseDTO
+    public class GetCrawlResponseDto
     {
         public string Id { get; set; }
         public IDictionary<Uri, IEnumerable<string>> Data { get; set; }

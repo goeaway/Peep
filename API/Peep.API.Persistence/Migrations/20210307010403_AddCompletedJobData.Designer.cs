@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Peep.API.Persistence;
 
 namespace Peep.API.Persistence.Migrations
 {
     [DbContext(typeof(PeepApiContext))]
-    partial class PeepApiContextModelSnapshot : ModelSnapshot
+    [Migration("20210307010403_AddCompletedJobData")]
+    partial class AddCompletedJobData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -6,11 +6,11 @@ using Peep.API.Application.Requests.Queries.GetCrawl;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Models.Mappings;
-using Peep.Core.API.Exceptions;
 using Peep.Core.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Peep.Data;
@@ -33,39 +33,43 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
         {
             const string ID = "random id";
             const int CRAWL_COUNT = 2;
-            var DATE_QUEUED = new DateTime(2021, 01, 01);
-            var DATE_STARTED = new DateTime(2022, 01, 01);
-            var DATE_COMPLETED = new DateTime(2023, 01, 01);
-            var DATA_FIRST_KEY = "http://localhost/";
-            var DATA_FIRST_VALUE = "data";
-            var DATA_JSON = JsonConvert.SerializeObject(new Dictionary<Uri, IEnumerable<string>>()
-            {
-                { new Uri(DATA_FIRST_KEY), new List<string> { DATA_FIRST_VALUE } }
-            });
-            var DURATION = TimeSpan.FromSeconds(1);
+            const string DATA_FIRST_KEY = "http://localhost/";
+            const string DATA_FIRST_VALUE = "data";
+            var dateQueued = new DateTime(2021, 01, 01);
+            var dateStarted = new DateTime(2022, 01, 01);
+            var dateCompleted = new DateTime(2023, 01, 01);
+            var duration = TimeSpan.FromSeconds(1);
 
             var request = new GetCrawlRequest(ID);
 
-            using var context = Setup.CreateContext();
+            await using var context = Setup.CreateContext();
 
-            context.CompletedJobs.Add(new CompletedJob
+            await context.CompletedJobs.AddAsync(new CompletedJob
             {
                 Id = ID,
-                DateQueued = DATE_QUEUED,
-                DateCompleted = DATE_COMPLETED,
-                DateStarted = DATE_STARTED,
+                DateQueued = dateQueued,
+                DateCompleted = dateCompleted,
+                DateStarted = dateStarted,
                 CrawlCount = CRAWL_COUNT,
-                DataJson = DATA_JSON,
-                Duration = DURATION
+                CompletedJobData = new List<CompletedJobData>
+                {
+                    new CompletedJobData
+                    {
+                        Source = DATA_FIRST_KEY,
+                        Value = DATA_FIRST_VALUE
+                    }
+                },
+                Duration = duration
             });
 
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
-            var result = await handler.Handle(request, CancellationToken.None);
+            var result = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             Assert.AreEqual(ID, result.Id);
 
@@ -73,11 +77,11 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             Assert.AreEqual(DATA_FIRST_VALUE, result.Data.First().Value.First());
 
             Assert.AreEqual(CRAWL_COUNT, result.CrawlCount);
-            Assert.AreEqual(DURATION, result.Duration);
+            Assert.AreEqual(duration, result.Duration);
 
-            Assert.AreEqual(DATE_QUEUED, result.DateQueued);
-            Assert.AreEqual(DATE_COMPLETED, result.DateCompleted);
-            Assert.AreEqual(DATE_STARTED, result.DateStarted);
+            Assert.AreEqual(dateQueued, result.DateQueued);
+            Assert.AreEqual(dateCompleted, result.DateCompleted);
+            Assert.AreEqual(dateStarted, result.DateStarted);
 
             Assert.IsNull(result.ErrorMessage);
             Assert.AreEqual(CrawlState.Complete, result.State);
@@ -87,26 +91,27 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
         public async Task Returns_Empty_Crawl_Result_With_Queued_Status_If_Crawl_Is_Queued()
         {
             const string ID = "random id";
-            var DATE_QUEUED = new DateTime(2021, 01, 01);
+            var dateQueued = new DateTime(2021, 01, 01);
 
             var request = new GetCrawlRequest(ID);
 
-            using var context = Setup.CreateContext();
+            await using var context = Setup.CreateContext();
 
-            context.QueuedJobs.Add(new QueuedJob
+            await context.QueuedJobs.AddAsync(new QueuedJob
             {
                 Id = ID,
                 JobJson = JsonConvert.SerializeObject(new StoppableCrawlJob()),
-                DateQueued = DATE_QUEUED
+                DateQueued = dateQueued
             });
 
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
-            var result = await handler.Handle(request, CancellationToken.None);
+            var result = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             Assert.AreEqual(ID, result.Id);
             
@@ -114,7 +119,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             Assert.AreEqual(0, result.CrawlCount);
             Assert.AreEqual(default, result.Duration);
             
-            Assert.AreEqual(DATE_QUEUED, result.DateQueued);
+            Assert.AreEqual(dateQueued, result.DateQueued);
             Assert.IsNull(result.DateCompleted);
             Assert.IsNull(result.DateStarted);
             
@@ -129,21 +134,21 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             const int CRAWL_COUNT = 1;
             const string DATA_FIRST_KEY = "http://localhost/";
             const string DATA_FIRST_VALUE = "data";
-            var DATE_QUEUED = new DateTime(2021, 01, 01);
-            var DATE_STARTED = new DateTime(2022, 01, 01);
-            var DURATION = TimeSpan.FromSeconds(1);
+            var dateQueued = new DateTime(2021, 01, 01);
+            var dateStarted = new DateTime(2022, 01, 01);
+            var duration = TimeSpan.FromSeconds(1);
 
             var request = new GetCrawlRequest(ID);
 
-            using var context = Setup.CreateContext();
+            await using var context = Setup.CreateContext();
 
-            context.RunningJobs.Add(new RunningJob
+            await context.RunningJobs.AddAsync(new RunningJob
             {
                 Id = ID,
-                DateQueued = DATE_QUEUED,
-                DateStarted = DATE_STARTED,
+                DateQueued = dateQueued,
+                DateStarted = dateStarted,
                 CrawlCount = CRAWL_COUNT,
-                Duration = DURATION
+                Duration = duration
             });
 
             await context.SaveChangesAsync();
@@ -159,7 +164,8 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
-            var result = await handler.Handle(request, CancellationToken.None);
+            var result = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             Assert.AreEqual(ID, result.Id);
 
@@ -167,10 +173,10 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             Assert.AreEqual(DATA_FIRST_VALUE, result.Data.First().Value.First());
 
             Assert.AreEqual(CRAWL_COUNT, result.CrawlCount);
-            Assert.AreEqual(DURATION, result.Duration);
+            Assert.AreEqual(duration, result.Duration);
 
-            Assert.AreEqual(DATE_QUEUED, result.DateQueued);
-            Assert.AreEqual(DATE_STARTED, result.DateStarted);
+            Assert.AreEqual(dateQueued, result.DateQueued);
+            Assert.AreEqual(dateStarted, result.DateStarted);
             Assert.IsNull(result.DateCompleted);
 
             Assert.IsNull(result.ErrorMessage);
@@ -186,38 +192,42 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             const string DATA_FIRST_VALUE = "data";
             const string ERRORS = "something bad,something else bad";
             
-            var DATE_QUEUED = new DateTime(2021, 01, 01);
-            var DATE_STARTED = new DateTime(2022, 01, 01);
-            var DATE_COMPLETED = new DateTime(2023, 01, 01);
-            var DATA_JSON = JsonConvert.SerializeObject(new Dictionary<Uri, IEnumerable<string>>() 
-            {
-                { new Uri(DATA_FIRST_KEY), new List<string> { DATA_FIRST_VALUE } }
-            });
-            var DURATION = TimeSpan.FromSeconds(1);
+            var dateQueued = new DateTime(2021, 01, 01);
+            var dateStarted = new DateTime(2022, 01, 01);
+            var dateCompleted = new DateTime(2023, 01, 01);
+            var duration = TimeSpan.FromSeconds(1);
 
             var request = new GetCrawlRequest(ID);
 
-            using var context = Setup.CreateContext();
+            await using var context = Setup.CreateContext();
 
-            context.CompletedJobs.Add(new CompletedJob
+            await context.CompletedJobs.AddAsync(new CompletedJob
             {
-                Duration = DURATION,
-                DataJson = DATA_JSON,
-                DateStarted = DATE_STARTED,
-                DateCompleted = DATE_COMPLETED,
-                DateQueued = DATE_QUEUED,
+                Duration = duration,
+                CompletedJobData = new List<CompletedJobData>
+                {
+                    new CompletedJobData
+                    {
+                        Source = DATA_FIRST_KEY,
+                        Value = DATA_FIRST_VALUE
+                    }
+                },
+                DateStarted = dateStarted,
+                DateCompleted = dateCompleted,
+                DateQueued = dateQueued,
                 CrawlCount = CRAWL_COUNT,
                 ErrorMessage = ERRORS,
                 Id = ID
             });
 
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
-            var result = await handler.Handle(request, CancellationToken.None);
+            var result = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             Assert.AreEqual(ID, result.Id);
 
@@ -225,31 +235,35 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             Assert.AreEqual(DATA_FIRST_VALUE, result.Data.First().Value.First());
 
             Assert.AreEqual(CRAWL_COUNT, result.CrawlCount);
-            Assert.AreEqual(DURATION, result.Duration);
+            Assert.AreEqual(duration, result.Duration);
 
-            Assert.AreEqual(DATE_QUEUED, result.DateQueued);
-            Assert.AreEqual(DATE_COMPLETED, result.DateCompleted);
-            Assert.AreEqual(DATE_STARTED, result.DateStarted);
+            Assert.AreEqual(dateQueued, result.DateQueued);
+            Assert.AreEqual(dateCompleted, result.DateCompleted);
+            Assert.AreEqual(dateStarted, result.DateStarted);
 
             Assert.AreEqual(ERRORS, result.ErrorMessage);
             Assert.AreEqual(CrawlState.Complete, result.State);
         }
 
         [TestMethod]
-        public async Task Throws_Error_If_Crawl_Id_Does_Not_Match_A_Queued_Or_Completed_Crawl()
+        public async Task Returns_Error_If_Crawl_Id_Does_Not_Match_A_Queued_Or_Completed_Crawl()
         {
             const string ID = "random id";
 
             var request = new GetCrawlRequest(ID);
 
-            using var context = Setup.CreateContext();
+            await using var context = Setup.CreateContext();
 
             var mockDataManager = new Mock<ICrawlDataSinkManager<ExtractedData>>();
 
             var handler = new GetCrawlHandler(context, mockDataManager.Object, CreateMapper());
 
-            await Assert.ThrowsExceptionAsync<RequestFailedException>(
-                () => handler.Handle(request, CancellationToken.None));
+            var result = await handler.Handle(request, CancellationToken.None);
+
+            var error = result.ErrorOrDefault;
+            
+            Assert.AreEqual(HttpStatusCode.NotFound, error.StatusCode);
+            Assert.AreEqual("Crawl not found", error.Message);
         }
     }
 }

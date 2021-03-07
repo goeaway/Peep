@@ -7,6 +7,8 @@ using Peep.API.Application.Requests.Commands.CancelCrawl;
 using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.API.Application.Requests.Queries.GetCrawl;
 using Peep.API.Controllers;
+using Peep.API.Models.DTOs;
+using Peep.Core.API;
 
 namespace Peep.Tests.API.Unit.Controllers
 {
@@ -20,6 +22,12 @@ namespace Peep.Tests.API.Unit.Controllers
             const string CRAWL_ID = "id";
             
             var mediator = new Mock<IMediator>();
+            mediator
+                .Setup(
+                    mock => mock.Send(
+                        It.IsAny<GetCrawlRequest>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new GetCrawlResponseDto());
             
             var controller = new CrawlController(mediator.Object);
 
@@ -40,6 +48,12 @@ namespace Peep.Tests.API.Unit.Controllers
             var job = new StoppableCrawlJob();
             
             var mediator = new Mock<IMediator>();
+            mediator
+                .Setup(
+                    mock => mock.Send(
+                        It.IsAny<QueueCrawlRequest>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new QueueCrawlResponseDto());
             
             var controller = new CrawlController(mediator.Object);
 
@@ -60,6 +74,12 @@ namespace Peep.Tests.API.Unit.Controllers
             const string CRAWL_ID = "id";
             
             var mediator = new Mock<IMediator>();
+            mediator
+                .Setup(
+                    mock => mock.Send(
+                        It.IsAny<CancelCrawlRequest>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CancelCrawlResponseDto());
             
             var controller = new CrawlController(mediator.Object);
 

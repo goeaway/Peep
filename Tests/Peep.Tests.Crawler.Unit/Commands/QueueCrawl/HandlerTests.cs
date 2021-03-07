@@ -41,7 +41,8 @@ namespace Peep.Tests.Crawler.Unit.Commands.QueueCrawl
             
             var handler = new QueueCrawlHandler(jobQueue.Object);
 
-            var result = await handler.Handle(request, CancellationToken.None);
+            var result = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             Assert.AreEqual(MediatR.Unit.Value, result);
         }

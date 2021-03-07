@@ -27,7 +27,9 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
 
             var handler = new QueueCrawlHandler(context, nowProvider);
 
-            var response = await handler.Handle(request, CancellationToken.None);
+            var response = (await handler
+                .Handle(request, CancellationToken.None)
+                ).SuccessOrDefault;
 
             var saved = context.QueuedJobs.Find(response.CrawlId);
             Assert.AreEqual(response.CrawlId, saved.Id);
@@ -45,7 +47,8 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
 
             var handler = new QueueCrawlHandler(context, nowProvider);
 
-            var response = await handler.Handle(request, CancellationToken.None);
+            var response = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             var saved = context.QueuedJobs.Find(response.CrawlId);
 
@@ -66,7 +69,8 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
 
             var handler = new QueueCrawlHandler(context, nowProvider);
 
-            var response = await handler.Handle(request, CancellationToken.None);
+            var response = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             var saved = context.QueuedJobs.Find(response.CrawlId);
 
@@ -92,7 +96,8 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
 
             var handler = new QueueCrawlHandler(context, nowProvider);
 
-            var response = await handler.Handle(request, CancellationToken.None);
+            var response = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             var saved = context.QueuedJobs.Find(response.CrawlId);
 
@@ -119,7 +124,8 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
 
             var handler = new QueueCrawlHandler(context, nowProvider);
 
-            var response = await handler.Handle(request, CancellationToken.None);
+            var response = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
             var saved = context.QueuedJobs.Find(response.CrawlId);
 

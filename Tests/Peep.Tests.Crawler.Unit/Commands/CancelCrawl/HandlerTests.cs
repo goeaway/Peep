@@ -91,7 +91,8 @@ namespace Peep.Tests.Crawler.Unit.Commands.CancelCrawl
             
             var handler = new CancelCrawlHandler(jobQueue.Object, cancellationTokenProvider.Object);
 
-            var result = await handler.Handle(request, CancellationToken.None);
+            var result = 
+                (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
             
             Assert.AreEqual(MediatR.Unit.Value, result);
         }
