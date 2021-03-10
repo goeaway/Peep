@@ -1,3 +1,4 @@
+using System;
 using MediatR;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
@@ -5,6 +6,7 @@ using Peep.Core.API.Providers;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Peep.API.Models.Enums;
 using Peep.Core.API;
 
 namespace Peep.API.Application.Requests.Commands.CancelCrawl
@@ -24,31 +26,35 @@ namespace Peep.API.Application.Requests.Commands.CancelCrawl
         public async Task<Either<CancelCrawlResponseDto, ErrorResponseDTO>> Handle(CancelCrawlRequest request, CancellationToken cancellationToken)
         {
             // try and find in the db, remove from there
-            var foundQueued = await _context.QueuedJobs.FindAsync(request.CrawlId);
+            var foundJob = await _context.Jobs.FindAsync(request.CrawlId);
 
-            if (foundQueued != null)
+            if (foundJob == null)
             {
-                // dequeue then return
-                _context.QueuedJobs.Remove(foundQueued);
-                await _context.SaveChangesAsync(cancellationToken);
-
-                return new CancelCrawlResponseDto();
+                return new ErrorResponseDTO
+                {
+                    Message = "Job not found",
+                    StatusCode = HttpStatusCode.NotFound
+                };
             }
 
-            // get the token provider to cancel the job
-            // if true, the job was cancelled,
-            // if not, then no job was running with this id
-            if (_tokenProvider.CancelJob(request.CrawlId))
+            switch (foundJob.State)
             {
-                return new CancelCrawlResponseDto();
+                case JobState.Queued:
+                    foundJob.State = JobState.Cancelled;
+                    await _context.SaveChangesAsync(cancellationToken);
+                    return new CancelCrawlResponseDto();
+                case JobState.Running:
+                    foundJob.State = JobState.Cancelled;
+                    await _context.SaveChangesAsync(cancellationToken);
+                    _tokenProvider.CancelJob(request.CrawlId);
+                    return new CancelCrawlResponseDto();
+                default:
+                    return new ErrorResponseDTO
+                    {
+                        Message = "Job not in a cancellable state",
+                        StatusCode = HttpStatusCode.BadRequest
+                    };
             }
-
-            // if we got here the crawl job was not found
-            return new ErrorResponseDTO
-            {
-                Message = "Crawl not found",
-                StatusCode = HttpStatusCode.NotFound
-            };
         }
     }
 }

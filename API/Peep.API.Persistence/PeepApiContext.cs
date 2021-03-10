@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Peep.API.Models.Entities;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using Peep.API.Models.Enums;
 
 namespace Peep.API.Persistence
 {
@@ -13,16 +12,24 @@ namespace Peep.API.Persistence
 
         }
 
-        public DbSet<QueuedJob> QueuedJobs { get; set; }
-        public DbSet<RunningJob> RunningJobs { get; set; }
-        public DbSet<CompletedJob> CompletedJobs { get; set; }
-        public DbSet<CompletedJobData> CompletedJobData { get; set; }
+        public DbSet<Job> Jobs { get; set; }
+        public DbSet<JobData> JobData { get; set; }
+        public DbSet<JobError> JobErrors { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<QueuedJob>().ToTable("QueuedJobs");
-            modelBuilder.Entity<RunningJob>().ToTable("RunningJobs");
-            modelBuilder.Entity<CompletedJob>().ToTable("CompletedJobs");
-            modelBuilder.Entity<CompletedJobData>().ToTable("CompletedJobData");
+            modelBuilder
+                .Entity<Job>()
+                .Property(p => p.State)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (JobState) Enum.Parse(typeof(JobState), v));
+            
+            modelBuilder
+                .Entity<Job>()
+                .ToTable("Jobs");
+            
+            modelBuilder.Entity<JobData>().ToTable("JobData");
+            modelBuilder.Entity<JobError>().ToTable("JobErrors");
         }
     }
 }

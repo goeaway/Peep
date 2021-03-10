@@ -12,19 +12,18 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Diagnostics;
 using Peep.API.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Peep.API.Models.Entities;
 using Peep.API.Application.Services;
 using Peep.Core.API.Behaviours;
 using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.Core.Infrastructure;
-using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Queuing;
 using Peep.Core.Infrastructure.Filtering;
 using MassTransit;
 using Peep.API.Application.Managers;
-using Peep.API.Application.Messages;
+using Peep.API.Messages;
+using Peep.API.Models.Mappings;
 using Peep.Core.API;
-using Peep.Data;
+using Peep.Core.API.Providers;
 
 namespace Peep.API
 {
@@ -43,10 +42,13 @@ namespace Peep.API
             services.AddMessagingOptions(Configuration, out var messagingOptions);
             services.AddCachingOptions(Configuration, out var cachingOptions);
 
+            services.AddMassTransitHostedService();
             services.AddMassTransit(options => 
             {
                 options.AddConsumer<CrawlerStartedConsumer>();
                 options.AddConsumer<CrawlerFinishedConsumer>();
+                options.AddConsumer<CrawlDataPushedConsumer>();
+                options.AddConsumer<CrawlErrorPushedConsumer>();
                 
                 options.UsingRabbitMq((ctx, cfg) => 
                 {
@@ -60,17 +62,41 @@ namespace Peep.API
                         "crawl-started", 
                         e =>
                         {
+                            var scope = ctx.CreateScope();
                             e.Consumer(
-                                () => new CrawlerStartedConsumer(ctx.GetRequiredService<IMediator>())
+                                () => new CrawlerStartedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
                             );
                         });
+                    
+                    cfg.ReceiveEndpoint(
+                        "crawl-data-pushed",
+                        e =>
+                        {
+                            var scope = ctx.CreateScope();
+                            e.Consumer(
+                                () => new CrawlDataPushedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
+                            );
+                        }
+                    );
+                    
+                    cfg.ReceiveEndpoint(
+                        "crawl-error-pushed",
+                        e =>
+                        {
+                            var scope = ctx.CreateScope();
+                            e.Consumer(
+                                () => new CrawlErrorPushedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
+                            );
+                        }
+                    );
 
                     cfg.ReceiveEndpoint(
                         "crawl-finished",
                         e =>
                         {
+                            var scope = ctx.CreateScope();
                             e.Consumer(
-                                () => new CrawlerFinishedConsumer(ctx.GetRequiredService<IMediator>())
+                                () => new CrawlerFinishedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
                             );
                         });
                 });
@@ -93,11 +119,13 @@ namespace Peep.API
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                 var context = scope.ServiceProvider.GetRequiredService<PeepApiContext>();
+                var nowProvider = scope.ServiceProvider.GetRequiredService<INowProvider>();
                 
                 return new CrawlRunnerService(
                     logger,
                     mediator,
-                    context);
+                    context,
+                    nowProvider);
             });
 
             services.AddDbContext<PeepApiContext>(
@@ -105,8 +133,6 @@ namespace Peep.API
                     Configuration.GetConnectionString("db"),
                     x => x.MigrationsAssembly("Peep.API.Persistence")));
 
-            services.AddTransient<ICrawlDataSinkManager<ExtractedData>, CrawlDataSinkManager>();
-            services.AddTransient<ICrawlDataSinkManager<CrawlErrors>, CrawlErrorSinkManager>();
             services.AddTransient<ICrawlQueueManager, CrawlQueueManager>();
             services.AddTransient<ICrawlFilterManager, CrawlFilterManager>();
             
@@ -116,7 +142,10 @@ namespace Peep.API
             
             services.AddCrawlCancellationTokenProvider();
             services.AddNowProvider();
-            services.AddAutoMapper(typeof(QueuedJob));
+            services.AddAutoMapper((ctx, cfg) =>
+            {
+                cfg.AddProfile(new JobProfile(ctx.GetRequiredService<INowProvider>()));
+            }, Assembly.GetExecutingAssembly());
             services.AddRedis(cachingOptions);
         }
 

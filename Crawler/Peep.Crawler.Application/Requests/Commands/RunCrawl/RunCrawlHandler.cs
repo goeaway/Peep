@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using MassTransit;
 using MediatR;
 using Peep.Core.API;
 using Peep.Core.API.Providers;
-using Peep.Core.Infrastructure.Data;
+using Peep.Core.Infrastructure.Messages;
 using Peep.Crawler.Application.Options;
-using Peep.Data;
 using Peep.Exceptions;
 using Peep.Filtering;
 using Peep.Queueing;
@@ -22,9 +22,8 @@ namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
         private readonly ICrawler _crawler;
         private readonly ICrawlFilter _filter;
         private readonly ICrawlQueue _queue;
-        private readonly ICrawlDataSink<ExtractedData> _dataSink;
-        private readonly ICrawlDataSink<CrawlError> _errorSink;
         private readonly CrawlConfigOptions _crawlConfigOptions;
+        private readonly IPublishEndpoint _publishEndpoint;
         
         public RunCrawlHandler(
             ILogger logger, 
@@ -32,18 +31,16 @@ namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
             ICrawler crawler, 
             ICrawlFilter filter, 
             ICrawlQueue queue, 
-            ICrawlDataSink<ExtractedData> dataSink, 
-            ICrawlDataSink<CrawlError> errorSink, 
-            CrawlConfigOptions crawlConfigOptions)
+            CrawlConfigOptions crawlConfigOptions, 
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
             _crawler = crawler;
             _filter = filter;
             _queue = queue;
-            _dataSink = dataSink;
-            _errorSink = errorSink;
             _crawlConfigOptions = crawlConfigOptions;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<Either<Unit, ErrorResponseDTO>> Handle(RunCrawlRequest request, CancellationToken cancellationToken)
@@ -80,8 +77,13 @@ namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
                     await foreach (var result in channelReader.ReadAllAsync(cancellationToken))
                     {
                         _logger.Information("Pushing data ({Count} item(s))", result.Data.Count);
+                        
                         // send data message back to manager
-                        await _dataSink.Push(job.Id, result.Data);
+                        await _publishEndpoint.Publish(new CrawlDataPushed
+                        {
+                            JobId = job.Id,
+                            Data = result.Data
+                        }, cancellationToken);
                     }
                 }
                 catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException) // cancellation token for channel reader causes this
@@ -94,10 +96,22 @@ namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
                 // push the data we have here
                 if (e is CrawlerRunException crawlerRunException)
                 {
-                    await _dataSink.Push(job.Id, crawlerRunException.CrawlProgress.Data);
+                    // publish message for data
+                    await _publishEndpoint.Publish(new CrawlDataPushed
+                    {
+                        JobId = job.Id,
+                        Data = crawlerRunException.CrawlProgress.Data
+                    }, cancellationToken);
                 }
-                
-                await _errorSink.Push(job.Id, new CrawlError { Message = e.Message, StackTrace = e.StackTrace });
+
+                await _publishEndpoint
+                    .Publish(new CrawlErrorPushed
+                    {
+                        Message = e.Message,
+                        StackTrace = e.StackTrace,
+                        Source = Environment.MachineName,
+                        JobId = job.Id
+                    }, cancellationToken);
                 
                 _logger.Error(e, "Error occurred during crawl");
             }

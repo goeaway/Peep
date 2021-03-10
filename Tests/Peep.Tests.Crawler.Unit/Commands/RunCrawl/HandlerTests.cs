@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using MassTransit;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Peep.Core.API.Providers;
-using Peep.Core.Infrastructure.Data;
+using Peep.Core.Infrastructure.Messages;
 using Peep.Crawler.Application.Options;
 using Peep.Crawler.Application.Requests.Commands.RunCrawl;
-using Peep.Crawler.Application.Services;
 using Peep.Data;
 using Peep.Exceptions;
 using Peep.Filtering;
@@ -39,9 +39,8 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
                 Id = JOB_ID
             };
             
-            var dataSink = new Mock<ICrawlDataSink<ExtractedData>>();
-            var errorSink = new Mock<ICrawlDataSink<CrawlError>>();
             var cancelTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
             
             var handler = new RunCrawlHandler(
                 logger,
@@ -49,9 +48,8 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
                 crawler.Object,
                 filter.Object,
                 queue.Object,
-                dataSink.Object,
-                errorSink.Object,
-                crawlerConfigOptions
+                crawlerConfigOptions,
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -70,16 +68,15 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
         }
 
         [TestMethod]
-        public async Task Pushes_Data_To_DataSink_When_Channel_Updates()
+        public async Task Pushes_Data_To_API_When_Channel_Updates()
         {
             const string JOB_ID = "id";
             const int UPDATE_COUNT = 1;
             var crawlerConfigOptions = new CrawlConfigOptions { ProgressUpdateDataCount = UPDATE_COUNT };
             var filter = new Mock<ICrawlFilter>();
             var queue = new Mock<ICrawlQueue>();
-            var dataSink = new Mock<ICrawlDataSink<ExtractedData>>();
-            var errorSink = new Mock<ICrawlDataSink<CrawlError>>();
             var cancelTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
 
             var job = new IdentifiableCrawlJob
             {
@@ -113,26 +110,30 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
                 crawler.Object,
                 filter.Object,
                 queue.Object,
-                dataSink.Object,
-                errorSink.Object,
-                crawlerConfigOptions
+                crawlerConfigOptions,
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            await channel.Writer.WriteAsync(new CrawlProgress {Data = data});
+            await channel.Writer.WriteAsync(new CrawlProgress {Data = data}, CancellationToken.None);
             cancellationTokenSource.CancelAfter(200);
             
             await handler.Handle(new RunCrawlRequest { Job = job }, cancellationTokenSource.Token);
 
             // verify data sink was called when channel reader is updated
-            dataSink
+            publishEndpoint
                 .Verify(
-                    mock => mock.Push(JOB_ID, data), Times.Once());
+                    mock => mock
+                        .Publish(
+                            It.Is<CrawlDataPushed>(
+                                value => value.JobId == JOB_ID && value.Data == data),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once());
         }
 
         [TestMethod]
-        public async Task Pushes_Data_To_DataSink_When_CrawlerRunException_Thrown()
+        public async Task Pushes_Data_To_API_When_CrawlerRunException_Thrown()
         {
             const string JOB_ID = "id";
             const int UPDATE_COUNT = 1;
@@ -162,9 +163,8 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
                 Id = JOB_ID
             };
             
-            var dataSink = new Mock<ICrawlDataSink<ExtractedData>>();
-            var errorSink = new Mock<ICrawlDataSink<CrawlError>>();
             var cancelTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
             
             var handler = new RunCrawlHandler(
                 logger,
@@ -172,21 +172,134 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
                 crawler.Object,
                 filter.Object,
                 queue.Object,
-                dataSink.Object,
-                errorSink.Object,
-                crawlerConfigOptions
+                crawlerConfigOptions,
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
 
             await handler.Handle(new RunCrawlRequest { Job = job }, cancellationTokenSource.Token);
+
+            publishEndpoint
+                .Verify(
+                    mock => mock
+                        .Publish(
+                            It.Is<CrawlDataPushed>(
+                                value => value.JobId == JOB_ID && value.Data == data),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once());
+        }
+        
+        [TestMethod]
+        public async Task Pushes_Error_To_API_When_CrawlerRunException_Thrown()
+        {
+            const string JOB_ID = "id";
+            const int UPDATE_COUNT = 1;
+            const string ERROR = "error";
+            var source = Environment.MachineName;
+
+            var logger = new LoggerConfiguration().CreateLogger();
+            var crawler = new Mock<ICrawler>();
+            crawler
+                .Setup(
+                    mock => mock.Crawl(
+                        It.IsAny<IdentifiableCrawlJob>(), 
+                        It.IsAny<int>(), 
+                        It.IsAny<ICrawlFilter>(), 
+                        It.IsAny<ICrawlQueue>(), 
+                        It.IsAny<CancellationToken>()))
+                .Throws(new CrawlerRunException(ERROR, new CrawlProgress()));
             
-            dataSink.Verify(
-                mock => mock.Push(
-                    JOB_ID,
-                    data
-                ), 
-                Times.Once());
+            var crawlerConfigOptions = new CrawlConfigOptions { ProgressUpdateDataCount = UPDATE_COUNT };
+            var filter = new Mock<ICrawlFilter>();
+            var queue = new Mock<ICrawlQueue>();
+
+            var job = new IdentifiableCrawlJob 
+            {
+                Id = JOB_ID
+            };
+            
+            var cancelTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            
+            var handler = new RunCrawlHandler(
+                logger,
+                cancelTokenProvider.Object,
+                crawler.Object,
+                filter.Object,
+                queue.Object,
+                crawlerConfigOptions,
+                publishEndpoint.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            await handler.Handle(new RunCrawlRequest { Job = job }, cancellationTokenSource.Token);
+
+            publishEndpoint
+                .Verify(
+                    mock => mock
+                        .Publish(
+                            It.Is<CrawlErrorPushed>(
+                                value => value.Message == ERROR && value.Source == source && value.JobId == JOB_ID),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once());
+        }
+        
+        [TestMethod]
+        public async Task Pushes_Error_To_API_When_Exception_Thrown()
+        {
+            const string JOB_ID = "id";
+            const int UPDATE_COUNT = 1;
+            const string ERROR = "error";
+            var source = Environment.MachineName;
+
+            var logger = new LoggerConfiguration().CreateLogger();
+            var crawler = new Mock<ICrawler>();
+            crawler
+                .Setup(
+                    mock => mock.Crawl(
+                        It.IsAny<IdentifiableCrawlJob>(), 
+                        It.IsAny<int>(), 
+                        It.IsAny<ICrawlFilter>(), 
+                        It.IsAny<ICrawlQueue>(), 
+                        It.IsAny<CancellationToken>()))
+                .Throws(new Exception(ERROR));
+            
+            var crawlerConfigOptions = new CrawlConfigOptions { ProgressUpdateDataCount = UPDATE_COUNT };
+            var filter = new Mock<ICrawlFilter>();
+            var queue = new Mock<ICrawlQueue>();
+
+            var job = new IdentifiableCrawlJob 
+            {
+                Id = JOB_ID
+            };
+            
+            var cancelTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            
+            var handler = new RunCrawlHandler(
+                logger,
+                cancelTokenProvider.Object,
+                crawler.Object,
+                filter.Object,
+                queue.Object,
+                crawlerConfigOptions,
+                publishEndpoint.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            await handler.Handle(new RunCrawlRequest { Job = job }, cancellationTokenSource.Token);
+
+            publishEndpoint
+                .Verify(
+                    mock => mock
+                        .Publish(
+                            It.Is<CrawlErrorPushed>(
+                                value => value.Message == ERROR && value.Source == source && value.JobId == JOB_ID),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once());
         }
 
         [TestMethod]
@@ -194,20 +307,19 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
         {
             const string JOB_ID = "id";
             const int UPDATE_COUNT = 1;
-            var PRE_CANCELLED_TOKEN_SOURCE = new CancellationTokenSource();
-            PRE_CANCELLED_TOKEN_SOURCE.Cancel();
+            var preCancelledTokenSource = new CancellationTokenSource();
+            preCancelledTokenSource.Cancel();
             
             var crawlerConfigOptions = new CrawlConfigOptions { ProgressUpdateDataCount = UPDATE_COUNT };
             var filter = new Mock<ICrawlFilter>();
             var queue = new Mock<ICrawlQueue>();
-            var dataSink = new Mock<ICrawlDataSink<ExtractedData>>();
-            var errorSink = new Mock<ICrawlDataSink<CrawlError>>();
             var cancelTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
             
             cancelTokenProvider
                 .Setup(
                     mock => mock.GetToken(It.IsAny<string>()))
-                .Returns(PRE_CANCELLED_TOKEN_SOURCE.Token);
+                .Returns(preCancelledTokenSource.Token);
 
             var job = new IdentifiableCrawlJob
             {
@@ -234,9 +346,8 @@ namespace Peep.Tests.Crawler.Unit.Commands.RunCrawl
                 crawler.Object,
                 filter.Object,
                 queue.Object,
-                dataSink.Object,
-                errorSink.Object,
-                crawlerConfigOptions
+                crawlerConfigOptions,
+                publishEndpoint.Object
             );
 
             await handler.Handle(new RunCrawlRequest { Job = job }, CancellationToken.None);

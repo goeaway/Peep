@@ -1,5 +1,5 @@
-ARG SDK_VERSION=3.1-buster-arm32v7
-ARG ASPNET_VERSION=3.1-buster-slim-arm32v7
+ARG SDK_VERSION=3.1-buster-arm64v8
+ARG ASPNET_VERSION=3.1-buster-slim-arm64v8
 FROM mcr.microsoft.com/dotnet/core/sdk:${SDK_VERSION} AS build-env
 WORKDIR /app
 
@@ -11,4 +11,4 @@ FROM mcr.microsoft.com/dotnet/core/aspnet:${ASPNET_VERSION}
 
 WORKDIR /app
 COPY --from=build-env /app/out .
-ENTRYPOINT ["dotnet", "Peep.API.dll"];
+ENTRYPOINT ["dotnet", "Peep.API.dll"]

@@ -54,7 +54,7 @@ namespace Peep.Tests
                     mock => mock
                         .WaitForSelector(
                             SELECTOR, 
-                            It.Is<TimeSpan>(value => value == TimeSpan.FromSeconds(2))));
+                            It.Is<TimeSpan>(value => value == TimeSpan.FromSeconds(30))));
         }
         
         [TestMethod]

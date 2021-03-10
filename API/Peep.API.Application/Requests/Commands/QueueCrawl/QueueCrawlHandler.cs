@@ -37,14 +37,14 @@ namespace Peep.API.Application.Requests.Commands.QueueCrawl
                     ? GetRequiredStopConditions() 
                     : request.Job.StopConditions.Concat(GetRequiredStopConditions());
 
-            var queuedJob = new QueuedJob
+            var queuedJob = new Job
             {
                 JobJson = JsonConvert.SerializeObject(request.Job),
                 DateQueued = _nowProvider.Now,
                 Id = Guid.NewGuid().ToString()
             };
 
-            await _context.QueuedJobs.AddAsync(queuedJob, cancellationToken);
+            await _context.Jobs.AddAsync(queuedJob, cancellationToken);
 
             await _context.SaveChangesAsync(cancellationToken);
 

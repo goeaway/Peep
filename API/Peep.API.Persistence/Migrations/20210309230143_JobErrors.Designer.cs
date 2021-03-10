@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Peep.API.Persistence;
@@ -9,9 +10,10 @@ using Peep.API.Persistence;
 namespace Peep.API.Persistence.Migrations
 {
     [DbContext(typeof(PeepApiContext))]
-    partial class PeepApiContextModelSnapshot : ModelSnapshot
+    [Migration("20210309230143_JobErrors")]
+    partial class JobErrors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

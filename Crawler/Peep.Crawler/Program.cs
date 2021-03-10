@@ -8,15 +8,14 @@ using Peep.Core.API;
 using Peep.Core.API.Behaviours;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure;
-using Peep.Core.Infrastructure.Data;
 using Peep.Core.Infrastructure.Filtering;
 using Peep.Core.Infrastructure.Queuing;
 using Peep.Crawler.Messages;
-using Peep.Data;
 using Peep.Filtering;
 using Peep.Queueing;
 using Peep.Crawler.Application.Requests.Commands.RunCrawl;
 using Peep.Crawler.Application.Services;
+using Serilog;
 
 namespace Peep.Crawler
 {
@@ -36,7 +35,22 @@ namespace Peep.Crawler
                     services.AddCrawlerOptions(hostContext.Configuration);
                     services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);
                     services.AddCachingOptions(hostContext.Configuration, out var cachingOptions);
-                    services.AddHostedService<Worker>();
+                    services.AddHostedService(provider =>
+                    {
+                        var scope = provider.CreateScope();
+
+                        var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
+                        var jobQueue = scope.ServiceProvider.GetRequiredService<IJobQueue>();
+                        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+                        
+                        return new Worker(
+                            logger,
+                            jobQueue,
+                            mediator,
+                            publishEndpoint
+                        );
+                    });
 
                     services.AddRedis(cachingOptions);
                     
@@ -45,8 +59,6 @@ namespace Peep.Crawler
 
                     services.AddTransient<ICrawlFilter, CacheCrawlFilter>();
                     services.AddTransient<ICrawlQueue, CacheCrawlQueue>();
-                    services.AddTransient<ICrawlDataSink<ExtractedData>, CacheCrawlDataSink>();
-                    services.AddTransient<ICrawlDataSink<CrawlError>, CacheCrawlErrorSink>();
 
                     services.AddSingleton<ICrawlCancellationTokenProvider, CrawlCancellationTokenProvider>();
 
@@ -71,7 +83,7 @@ namespace Peep.Crawler
                                 "crawl-queued-" + Environment.MachineName, 
                                 e =>
                                 {
-                                    e.Consumer<CrawlQueuedConsumer>(
+                                    e.Consumer(
                                         () => new CrawlQueuedConsumer(ctx.GetRequiredService<IMediator>())
                                     );
                                 });
@@ -80,7 +92,7 @@ namespace Peep.Crawler
                                 "crawl-cancelled-" + Environment.MachineName,
                                 e =>
                                 {
-                                    e.Consumer<CrawlCancelledConsumer>(
+                                    e.Consumer(
                                         () => new CrawlCancelledConsumer(ctx.GetRequiredService<IMediator>())
                                     );
                                 });

@@ -5,7 +5,7 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
 {
     public class RunCrawlRequest : IRequest<Unit>
     {
-        public QueuedJob Job { get; set; }
-        public StoppableCrawlJob JobData { get; set; }
+        public string JobId { get; set; }
+        public StoppableCrawlJob JobActual { get; set; }
     }
 }

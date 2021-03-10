@@ -23,7 +23,7 @@ namespace Peep.PageActions
             switch (pageAction.Type)
             {
                 case SerialisablePageActionType.Wait:
-                    await browserAdapter.WaitForSelector((string)pageAction.Value, TimeSpan.FromSeconds(2));
+                    await browserAdapter.WaitForSelector((string)pageAction.Value, TimeSpan.FromSeconds(30));
                     break;
                 case SerialisablePageActionType.Click:
                     await browserAdapter.Click((string)pageAction.Value);

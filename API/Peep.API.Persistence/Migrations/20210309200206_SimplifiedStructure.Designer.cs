@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Peep.API.Persistence;
@@ -9,9 +10,10 @@ using Peep.API.Persistence;
 namespace Peep.API.Persistence.Migrations
 {
     [DbContext(typeof(PeepApiContext))]
-    partial class PeepApiContextModelSnapshot : ModelSnapshot
+    [Migration("20210309200206_SimplifiedStructure")]
+    partial class SimplifiedStructure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,12 +38,14 @@ namespace Peep.API.Persistence.Migrations
                     b.Property<DateTime?>("DateStarted")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
                     b.Property<string>("JobJson")
                         .HasColumnType("text");
 
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("State")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -71,43 +75,10 @@ namespace Peep.API.Persistence.Migrations
                     b.ToTable("JobData");
                 });
 
-            modelBuilder.Entity("Peep.API.Models.Entities.JobError", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<string>("JobId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Source")
-                        .HasColumnType("text");
-
-                    b.Property<string>("StackTrace")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("JobId");
-
-                    b.ToTable("JobErrors");
-                });
-
             modelBuilder.Entity("Peep.API.Models.Entities.JobData", b =>
                 {
                     b.HasOne("Peep.API.Models.Entities.Job", "Job")
                         .WithMany("JobData")
-                        .HasForeignKey("JobId");
-                });
-
-            modelBuilder.Entity("Peep.API.Models.Entities.JobError", b =>
-                {
-                    b.HasOne("Peep.API.Models.Entities.Job", null)
-                        .WithMany("JobErrors")
                         .HasForeignKey("JobId");
                 });
 #pragma warning restore 612, 618

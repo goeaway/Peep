@@ -31,7 +31,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
                 .Handle(request, CancellationToken.None)
                 ).SuccessOrDefault;
 
-            var saved = context.QueuedJobs.Find(response.CrawlId);
+            var saved = context.Jobs.Find(response.CrawlId);
             Assert.AreEqual(response.CrawlId, saved.Id);
         }
 
@@ -50,7 +50,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
             var response = 
                 (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
-            var saved = context.QueuedJobs.Find(response.CrawlId);
+            var saved = context.Jobs.Find(response.CrawlId);
 
             Assert.IsNotNull(saved.JobJson);
             Assert.IsNotNull(saved.Id);
@@ -72,7 +72,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
             var response = 
                 (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
-            var saved = context.QueuedJobs.Find(response.CrawlId);
+            var saved = context.Jobs.Find(response.CrawlId);
 
             var savedJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(saved.JobJson);
 
@@ -99,7 +99,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
             var response = 
                 (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
-            var saved = context.QueuedJobs.Find(response.CrawlId);
+            var saved = context.Jobs.Find(response.CrawlId);
 
             var savedJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(saved.JobJson);
 
@@ -127,7 +127,7 @@ namespace Peep.Tests.API.Unit.Commands.QueueCrawl
             var response = 
                 (await handler.Handle(request, CancellationToken.None)).SuccessOrDefault;
 
-            var saved = context.QueuedJobs.Find(response.CrawlId);
+            var saved = context.Jobs.Find(response.CrawlId);
 
             var savedJob = JsonConvert.DeserializeObject<StoppableCrawlJob>(saved.JobJson);
 
