@@ -4,7 +4,7 @@ using MediatR;
 using Peep.API.Application.Requests.Commands.CrawlerFinished;
 using Peep.Core.Infrastructure.Messages;
 
-namespace Peep.API.Application.Messages
+namespace Peep.API.Messages
 {
     public class CrawlerFinishedConsumer : IConsumer<CrawlerFinished>
     {
