@@ -103,6 +103,7 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
         {
             await _queueManager.Clear();
             await _filterManager.Clear();
+            _crawlerManager.Clear(job.Id);
 
             // queue up job seeds
             _logger.Information("Queueing seeds {Seeds}", string.Join(", ", jobData.Seeds));
@@ -219,6 +220,7 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
             // clear cache of data, queue, filter
             await _queueManager.Clear();
             await _filterManager.Clear();
+            _crawlerManager.Clear(job.Id);
 
             _crawlCancellationTokenProvider.DisposeOfToken(job.Id);
         }

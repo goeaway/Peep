@@ -755,6 +755,63 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
         }
         
         [TestMethod]
+        public async Task Clears_CrawlerManager()
+        {
+            const string JOB_ID = "id";
+
+            var seeds = new List<Uri>
+            {
+                new Uri("http://localhost")
+            };
+
+            var job = new Job
+            {
+                Id = JOB_ID
+            };
+
+            var jobData = new StoppableCrawlJob
+            {
+                Seeds = seeds
+            };
+            
+            var logger = new LoggerConfiguration().CreateLogger();
+            var nowProvider = new NowProvider();
+            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
+            var publishEndpoint = new Mock<IPublishEndpoint>();
+            var filterManager = new Mock<ICrawlFilterManager>();
+            var queueManager = new Mock<ICrawlQueueManager>();
+            
+            var crawlerManager = new Mock<ICrawlerManager>();
+            
+            await using var context = Setup.CreateContext();
+            
+            await context.Jobs.AddAsync(job);
+
+            await context.SaveChangesAsync();
+                
+            var handler = new RunCrawlHandler(
+                context,
+                logger,
+                nowProvider,
+                cancellationTokenProvider.Object,
+                filterManager.Object,
+                queueManager.Object,
+                publishEndpoint.Object,
+                crawlerManager.Object
+            );
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            cancellationTokenSource.CancelAfter(500);
+            await handler.Handle(new RunCrawlRequest { JobId = JOB_ID, JobActual = jobData }, cancellationTokenSource.Token); 
+            
+            crawlerManager
+                .Verify(
+                    mock => mock.Clear(JOB_ID),
+                    Times.Exactly(2));
+        }
+        
+        [TestMethod]
         public async Task Token_Is_Disposed_Of_After_Crawl()
         {
             const string JOB_ID = "id";
