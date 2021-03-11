@@ -5,7 +5,7 @@ namespace Peep.Factories
 {
     public class PuppeteerSharpBrowserAdapterFactory : IBrowserAdapterFactory
     {
-        Task<IBrowserAdapter> IBrowserAdapterFactory.GetBrowserAdapter() 
+        public Task<IBrowserAdapter> GetBrowserAdapter() 
             => Task.FromResult<IBrowserAdapter>(new PuppeteerSharpBrowserAdapter());
     }
 }
