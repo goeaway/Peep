@@ -228,6 +228,103 @@ namespace Peep
                 }
             }
         }
+        
+        private async Task InnerCrawl2(
+            CrawlJob job, 
+            ExtractedData data,
+            IBrowserAdapter browserAdapter, 
+            string userAgent,
+            ICrawlFilter filter,
+            ICrawlQueue queue,
+            CancellationToken cancellationToken,
+            int dataCountUpdate,
+            ChannelWriter<CrawlProgress> channelWriter)
+        {
+            var progressStopwatch = new Stopwatch();
+            progressStopwatch.Start();
+
+            var pageActionRetryPolicy = Policy
+                .Handle<WaitTaskTimeoutException>()
+                .WaitAndRetryAsync(_crawlerOptions.PageActionRetryCount, attempt => TimeSpan.FromMilliseconds(attempt * 200));
+
+            var pageTasks = new List<(Page page, Task task)>();
+            
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if(data.Count >= dataCountUpdate)
+                {
+                    if(channelWriter.TryWrite(new CrawlProgress { Data = data }))
+                    {
+                        data.Clear();
+                    }
+                    progressStopwatch.Restart();
+                }
+                
+                // get first page that is available
+                var page = pageTasks.FirstOrDefault(pt => pt.task == null);
+
+                if (page == default)
+                {
+                    continue;
+                }
+                
+                var next = await queue.Dequeue();
+
+                if (next == null)
+                {
+                    continue;
+                }
+                
+                if (await filter.Contains(next.AbsoluteUri))
+                {
+                    continue;
+                }
+
+                await filter.Add(next.AbsoluteUri);
+                
+                page.task = Task
+                    .Run(async () =>
+                    {
+                        var response = await browserAdapter.NavigateToAsync(next);
+
+                        if(response && !cancellationToken.IsCancellationRequested)
+                        {
+                            // perform any page actions to get the page in a certain state before extracting content
+                            if(job.PageActions != null && job.PageActions.Any())
+                            {
+                                foreach(var pageAction in job.PageActions)
+                                {
+                                    // only perform if the action of the page action doesn't have a uri regex, or it matches the current page
+                                    if((string.IsNullOrWhiteSpace(pageAction.UriRegex) || Regex.IsMatch(next.AbsoluteUri, pageAction.UriRegex)) && !cancellationToken.IsCancellationRequested)
+                                    {
+                                        // retry here
+                                        await pageActionRetryPolicy
+                                            .ExecuteAsync(cT => _crawlerOptions.PageActionPerformer.Perform(pageAction, browserAdapter), cancellationToken);
+                                    }
+                                }
+                            }
+
+                            var content = await browserAdapter.GetContentAsync();
+
+                            // extract URIs and data from content
+                            await ExtractData(
+                                content,
+                                next,
+                                data,
+                                job,
+                                userAgent,
+                                filter,
+                                queue,
+                                cancellationToken
+                            );
+                        }
+                    }, cancellationToken)
+                    .ContinueWith(antecedent =>
+                    {
+                        page.task = null;
+                    }, cancellationToken);
+            }
+        }
 
         private async Task ExtractData(
             string content,

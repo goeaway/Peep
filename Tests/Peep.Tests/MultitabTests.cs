@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Peep.Factories;
 using PuppeteerSharp;
@@ -39,34 +40,30 @@ namespace Peep.Tests
             await page3.GoToAsync("http://bbc.co.uk");
             await page4.GoToAsync("http://old.reddit.com");
 
-            var pageTaskDict = 
+            var pageTasks = 
                 (await browser.PagesAsync())
-                .ToDictionary(k => k, v => (Task)null);
-            
-            var pageTaskDictKeys = pageTaskDict.Keys.ToList();
+                .Select(Task.FromResult)
+                .ToList();
             
             var start = DateTime.Now;
             var timeoutRandomiser = new Random();
             
             while (DateTime.Now - start < TimeSpan.FromMinutes(1))
             {
-                foreach (var page in pageTaskDictKeys)
+                var completedTask = await Task.WhenAny(pageTasks);
+                pageTasks.Remove(completedTask);
+
+                var page = await completedTask;
+                Console.WriteLine(page.GetTitleAsync());
+                await Task.Delay(timeoutRandomiser.Next(500, 2000));
+
+                var newTask = Task.Run(async () =>
                 {
-                    if (pageTaskDict[page] != null)
-                    {
-                        continue;
-                    }
-                    
-                    var reloadTask = page
-                        .ReloadAsync()
-                        .ContinueWith(async antecedent =>
-                        {
-                            Console.WriteLine(page.GetTitleAsync());
-                            await Task.Delay(timeoutRandomiser.Next(500, 2000));
-                            pageTaskDict[page] = null;
-                        });
-                    pageTaskDict[page] = reloadTask;
-                }
+                    await page.ReloadAsync();
+                    return page;
+                });
+                
+                pageTasks.Add(newTask);
             }
         }
     }
