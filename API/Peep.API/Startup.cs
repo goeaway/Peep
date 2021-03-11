@@ -64,7 +64,8 @@ namespace Peep.API
                         {
                             var scope = ctx.CreateScope();
                             e.Consumer(
-                                () => new CrawlerStartedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
+                                () => new CrawlerStartedConsumer(
+                                    scope.ServiceProvider.GetRequiredService<IMediator>())
                             );
                         });
                     
@@ -74,7 +75,8 @@ namespace Peep.API
                         {
                             var scope = ctx.CreateScope();
                             e.Consumer(
-                                () => new CrawlDataPushedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
+                                () => new CrawlDataPushedConsumer(
+                                    scope.ServiceProvider.GetRequiredService<IMediator>())
                             );
                         }
                     );
@@ -85,7 +87,8 @@ namespace Peep.API
                         {
                             var scope = ctx.CreateScope();
                             e.Consumer(
-                                () => new CrawlErrorPushedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
+                                () => new CrawlErrorPushedConsumer(
+                                    scope.ServiceProvider.GetRequiredService<IMediator>())
                             );
                         }
                     );
@@ -96,7 +99,8 @@ namespace Peep.API
                         {
                             var scope = ctx.CreateScope();
                             e.Consumer(
-                                () => new CrawlerFinishedConsumer(scope.ServiceProvider.GetRequiredService<IMediator>())
+                                () => new CrawlerFinishedConsumer(
+                                    scope.ServiceProvider.GetRequiredService<IMediator>())
                             );
                         });
                 });
