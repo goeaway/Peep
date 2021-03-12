@@ -15,12 +15,14 @@ namespace Peep
         /// Performs a crawl based on the options in the provided <see cref="CrawlJob"/> and periodically pushes updates to a channel.
         /// </summary>
         /// <param name="job">The job options that define the crawl</param>
-        /// <param name="channelUpdateTimeSpan">a time interval that represents how often the crawler should write progress to the channel</param>
+        /// <param name="dataUpdateCount">An integer representing a maximum amount of data the crawler should collect before offloading the data to the channel</param>
+        /// <param name="queue">An <see cref="ICrawlQueue"/> the crawler can use to retrieve new URLs to crawl</param>
+        /// <param name="filter">An <see cref="ICrawlFilter"/> the crawler can add crawled URLs to and check against when deciding to crawl a URL</param>
         /// <param name="cancellationToken">A cancellation token that the crawler will check throughout the crawl</param>
         /// <returns></returns>
         ChannelReader<CrawlProgress> Crawl(
             CrawlJob job, 
-            int dateUpdateCount, 
+            int dataUpdateCount, 
             ICrawlFilter filter,
             ICrawlQueue queue,
             CancellationToken cancellationToken);

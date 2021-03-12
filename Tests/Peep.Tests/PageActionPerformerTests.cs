@@ -25,7 +25,7 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Perform_Throws_If_PageAction_Null()
         {
-            var adapterMock = new Mock<IBrowserAdapter>();
+            var adapterMock = new Mock<IPageAdapter>();
             var performer = new PageActionPerformer();
             
             await Assert
@@ -39,7 +39,7 @@ namespace Peep.Tests
             const string SELECTOR = "selector";
             const SerialisablePageActionType TYPE = SerialisablePageActionType.Wait;
             
-            var adapterMock = new Mock<IBrowserAdapter>();
+            var adapterMock = new Mock<IPageAdapter>();
             var pageAction = new SerialisablePageAction
             {
                 Value = SELECTOR,
@@ -54,7 +54,7 @@ namespace Peep.Tests
                     mock => mock
                         .WaitForSelector(
                             SELECTOR, 
-                            It.Is<TimeSpan>(value => value == TimeSpan.FromSeconds(30))));
+                            It.Is<TimeSpan>(value => value == TimeSpan.FromSeconds(10))));
         }
         
         [TestMethod]
@@ -63,7 +63,7 @@ namespace Peep.Tests
             const string SELECTOR = "selector";
             const SerialisablePageActionType TYPE = SerialisablePageActionType.Click;
             
-            var adapterMock = new Mock<IBrowserAdapter>();
+            var adapterMock = new Mock<IPageAdapter>();
             var pageAction = new SerialisablePageAction
             {
                 Value = SELECTOR,
@@ -86,7 +86,7 @@ namespace Peep.Tests
             const int SCROLL_AMOUNT = 1;
             const SerialisablePageActionType TYPE = SerialisablePageActionType.Scroll;
             
-            var adapterMock = new Mock<IBrowserAdapter>();
+            var adapterMock = new Mock<IPageAdapter>();
             var pageAction = new SerialisablePageAction
             {
                 Value = SCROLL_AMOUNT,

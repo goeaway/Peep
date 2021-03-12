@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using NpgsqlTypes;
 using Peep.Crawler.Application.Options;
+using Peep.Factories;
 using Serilog.Sinks.PostgreSQL;
 
 namespace Peep.Crawler
@@ -42,17 +43,25 @@ namespace Peep.Crawler
             return services;
         }
 
-        public static IServiceCollection AddCrawler(this IServiceCollection services)
+        public static IServiceCollection AddCrawler(this IServiceCollection services, CrawlConfigOptions options)
         {
-            services.AddTransient<ICrawler, DistributedCrawler>();
+            services.AddTransient<ICrawler, DistributedCrawler>(provider =>
+            {
+                var crawlerOptions = new CrawlerOptions
+                {
+                    BrowserAdapterFactory = new PuppeteerSharpBrowserAdapterFactory(options.BrowserPagesCount)
+                };
+                return new DistributedCrawler(crawlerOptions);
+            });
             return services;
         }
 
         public static IServiceCollection AddCrawlerOptions(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            out CrawlConfigOptions options)
         {
-            var options = new CrawlConfigOptions();
+            options = new CrawlConfigOptions();
             configuration.GetSection(CrawlConfigOptions.Key)
                 .Bind(options);
             return services.AddSingleton(options);

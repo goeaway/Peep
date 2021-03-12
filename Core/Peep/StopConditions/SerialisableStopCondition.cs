@@ -26,7 +26,7 @@ namespace Peep.StopConditions
                 SerialisableStopConditionType.MaxCrawlCount => progress.CrawlCount >= Convert.ToInt32(Value),
                 SerialisableStopConditionType.MaxDataCount => progress.DataCount >= Convert.ToInt32(Value),
                 SerialisableStopConditionType.MaxDurationSeconds => progress.Duration.TotalSeconds >= Convert.ToInt32(Value),
-                _ => throw new NotImplementedException(),
+                _ => throw new NotSupportedException(),
             };
         }
     }

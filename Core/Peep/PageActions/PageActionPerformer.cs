@@ -8,28 +8,28 @@ namespace Peep.PageActions
 {
     public class PageActionPerformer : IPageActionPerformer
     {
-        public async Task Perform(IPageAction pageAction, IBrowserAdapter browserAdapter)
+        public async Task Perform(IPageAction pageAction, IPageAdapter pageAdapter)
         {
             if (pageAction == null)
             {
                 throw new ArgumentNullException(nameof(pageAction));
             }
             
-            if (browserAdapter == null)
+            if (pageAdapter == null)
             {
-                throw new ArgumentNullException(nameof(browserAdapter));
+                throw new ArgumentNullException(nameof(pageAdapter));
             }
 
             switch (pageAction.Type)
             {
                 case SerialisablePageActionType.Wait:
-                    await browserAdapter.WaitForSelector((string)pageAction.Value, TimeSpan.FromSeconds(30));
+                    await pageAdapter.WaitForSelector((string)pageAction.Value, TimeSpan.FromSeconds(10));
                     break;
                 case SerialisablePageActionType.Click:
-                    await browserAdapter.Click((string)pageAction.Value);
+                    await pageAdapter.Click((string)pageAction.Value);
                     break;
                 case SerialisablePageActionType.Scroll:
-                    await browserAdapter.ScrollY((int)pageAction.Value);
+                    await pageAdapter.ScrollY((int)pageAction.Value);
                     break;
                 default:
                     throw new NotSupportedException(pageAction.Type.ToString());
