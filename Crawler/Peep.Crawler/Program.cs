@@ -31,9 +31,9 @@ namespace Peep.Crawler
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddLogger(hostContext.Configuration);
-                    services.AddCrawler();
-                    services.AddCrawlerOptions(hostContext.Configuration);
+                    services.AddCrawlerOptions(hostContext.Configuration, out var crawlOptions);
                     services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);
+                    services.AddCrawler(crawlOptions);
                     services.AddCachingOptions(hostContext.Configuration, out var cachingOptions);
                     services.AddHostedService(provider =>
                     {

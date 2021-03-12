@@ -3,7 +3,6 @@ using Peep.Exceptions;
 using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -86,48 +85,43 @@ namespace Peep
                 SingleReader = true,
                 SingleWriter = true
             });
+            
+            var data = new ExtractedData();
+
+            _crawlerOptions.DataExtractor.LoadCustomRegexPattern(job.DataRegex);
 
             // have a task in here that starts the crawl, and then when we get to the end of that set the channel as complete
             // fire and forget task?
+                
             _ = Task.Run(async () =>
             {
-                var data = new ExtractedData();
-
-                _crawlerOptions.DataExtractor.LoadCustomRegexPattern(job.DataRegex);
-
                 try
                 {
-                    using (var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter())
-                    {
-                        var userAgent = await browserAdapter.GetUserAgentAsync();
-
-                        try
-                        {
-                            await InnerCrawl(
-                                job,
-                                data,
-                                browserAdapter,
-                                userAgent,
-                                filter,
-                                queue,
-                                cancellationToken,
-                                dataCountUpdate,
-                                channel.Writer);
-                        }
-                        catch(Exception e) when (e is TaskCanceledException || e is OperationCanceledException)
-                        {
-                            // ignore
-                        }
-                    }
-
-                    await channel.Writer.WriteAsync(new CrawlProgress { Data = data });
+                    using var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter();
+                    var userAgent = await browserAdapter.GetUserAgentAsync();
+                    
+                    await InnerCrawl(
+                        job,
+                        data,
+                        browserAdapter,
+                        userAgent,
+                        filter,
+                        queue,
+                        cancellationToken,
+                        dataCountUpdate,
+                        channel.Writer);
+                }
+                catch (Exception e) when (e is TaskCanceledException || e is OperationCanceledException)
+                {
+                    // ignore
+                    await channel.Writer.WriteAsync(new CrawlProgress { Data = data }, CancellationToken.None);
                     channel.Writer.Complete();
                 }
                 catch (Exception e)
                 {
                     channel.Writer.Complete(new CrawlerRunException(
                         e.Message,
-                        new CrawlProgress { Data = data },
+                        new CrawlProgress {Data = data},
                         e));
                 }
             }, cancellationToken);
@@ -146,86 +140,95 @@ namespace Peep
             int dataCountUpdate,
             ChannelWriter<CrawlProgress> channelWriter)
         {
-            var progressStopwatch = new Stopwatch();
-            progressStopwatch.Start();
-
             var pageActionRetryPolicy = Policy
                 .Handle<WaitTaskTimeoutException>()
-                .WaitAndRetryAsync(_crawlerOptions.PageActionRetryCount, attempt => TimeSpan.FromMilliseconds(attempt * 200));
+                .WaitAndRetryAsync(
+                    _crawlerOptions.PageActionRetryCount, 
+                    attempt => TimeSpan.FromMilliseconds(attempt * 200));
 
-            var queueEmptyRetryPolicy = Policy
-                .HandleResult<Uri>(uri => uri == null)
-                .WaitAndRetryAsync(_crawlerOptions.QueueEmptyRetryCount, attempt => TimeSpan.FromMilliseconds(attempt * 200));
-
+            var pageAdapterTasks = browserAdapter
+                .GetPageAdapters()
+                .Select(Task.FromResult)
+                .ToList();
+            
             while (!cancellationToken.IsCancellationRequested)
             {
                 if(data.Count >= dataCountUpdate)
                 {
-                    if(channelWriter.TryWrite(new CrawlProgress { Data = data }))
+                    if(channelWriter.TryWrite(new CrawlProgress { Data = new ExtractedData(data) }))
                     {
                         data.Clear();
                     }
-                    progressStopwatch.Restart();
                 }
 
-                // get next uri, if this returns null we will retry using the retry policy
-                var next = await queueEmptyRetryPolicy.ExecuteAsync(ct => queue.Dequeue(), cancellationToken);
-
-                // after a certain amount of retries the policy will just allow through anyway, we then handle below
-                if (next == null) 
+                if (!pageAdapterTasks.Any())
                 {
-                    // don't throw, just break
-                    if(cancellationToken.IsCancellationRequested)
-                    {
-                        break;
-                    }
-
-                    throw new 
-                        CrawlerEmptyQueueRetryLimitExceededException(
-                            $"Queue was empty {_crawlerOptions.QueueEmptyRetryCount} time(s)");
-                }
-
-                // if filter contains next already we continue
-                if (await filter.Contains(next.AbsoluteUri))
-                {
+                    await Task.Delay(50, cancellationToken);
                     continue;
                 }
                 
-                await filter.Add(next.AbsoluteUri);
+                var next = await queue.Dequeue();
 
-                var response = await browserAdapter.NavigateToAsync(next);
-
-                if(response && !cancellationToken.IsCancellationRequested)
+                if (next == null || await filter.Contains(next.AbsoluteUri))
                 {
-                    // perform any page actions to get the page in a certain state before extracting content
-                    if(job.PageActions != null && job.PageActions.Any())
+                    await Task.Delay(50, cancellationToken);
+                    continue;
+                }
+
+                // TODO send dequeue heartbeat?
+                
+                await filter.Add(next.AbsoluteUri);
+                
+                var availablePageAdapterTask = await Task.WhenAny(pageAdapterTasks);
+                pageAdapterTasks.Remove(availablePageAdapterTask);
+
+                var availablePageAdapter = await availablePageAdapterTask;
+
+                pageAdapterTasks.Add(Task
+                    .Run(async () =>
                     {
-                        foreach(var pageAction in job.PageActions)
+                        var response = await availablePageAdapter
+                            .NavigateToAsync(next);
+
+                        if (!response || cancellationToken.IsCancellationRequested)
                         {
-                            // only perform if the action if the page action doesn't have a uri regex, or it matches the current page
-                            if((string.IsNullOrWhiteSpace(pageAction.UriRegex) || Regex.IsMatch(next.AbsoluteUri, pageAction.UriRegex)) && !cancellationToken.IsCancellationRequested)
+                            return availablePageAdapter;
+                        }
+
+                        // perform any page actions to get the page in a certain state before extracting content
+                        if (job.PageActions != null && job.PageActions.Any())
+                        {
+                            foreach (var pageAction in job.PageActions)
                             {
-                                // retry here
-                                await pageActionRetryPolicy
-                                    .ExecuteAsync(cT => _crawlerOptions.PageActionPerformer.Perform(pageAction, browserAdapter), cancellationToken);
+                                // only perform if the action of the page action doesn't have a uri regex, or it matches the current page
+                                if ((string.IsNullOrWhiteSpace(pageAction.UriRegex) ||
+                                     Regex.IsMatch(next.AbsoluteUri, pageAction.UriRegex)) &&
+                                    !cancellationToken.IsCancellationRequested)
+                                {
+                                    // retry here
+                                    await pageActionRetryPolicy
+                                        .ExecuteAsync(
+                                            cT => _crawlerOptions.PageActionPerformer.Perform(pageAction,
+                                                availablePageAdapter), cancellationToken);
+                                }
                             }
                         }
-                    }
 
-                    var content = await browserAdapter.GetContentAsync();
+                        var content = await availablePageAdapter.GetContentAsync();
 
-                    // extract URIs and data from content
-                    await ExtractData(
-                        content,
-                        next,
-                        data,
-                        job,
-                        userAgent,
-                        filter,
-                        queue,
-                        cancellationToken
-                    );
-                }
+                        // extract URIs and data from content
+                        await ExtractData(
+                            content,
+                            next,
+                            data,
+                            job,
+                            userAgent,
+                            filter,
+                            queue,
+                            cancellationToken);
+                        
+                        return availablePageAdapter;
+                }, cancellationToken));
             }
         }
 

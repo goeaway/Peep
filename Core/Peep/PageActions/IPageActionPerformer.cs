@@ -8,6 +8,6 @@ namespace Peep.PageActions
 {
     public interface IPageActionPerformer
     {
-        Task Perform(IPageAction pageAction, IBrowserAdapter browserAdapter);
+        Task Perform(IPageAction pageAction, IPageAdapter pageAdapter);
     }
 }

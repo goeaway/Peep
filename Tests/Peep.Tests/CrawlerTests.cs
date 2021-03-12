@@ -147,6 +147,8 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
+            
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
@@ -166,7 +168,7 @@ namespace Peep.Tests
                 new CrawlQueue(JOB.Seeds),
                 cancellationTokenSource.Token);
 
-            mockBrowserAdapter.Verify(
+            mockPageAdapter.Verify(
                 mock => mock.NavigateToAsync(It.IsAny<Uri>()),
                 Times.Never());
         }
@@ -189,14 +191,18 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
+            
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(false);
@@ -221,7 +227,7 @@ namespace Peep.Tests
 
             await result.WaitToReadAsync();
 
-            mockBrowserAdapter.Verify(
+            mockPageAdapter.Verify(
                 mock => mock.NavigateToAsync(
                     It.Is<Uri>(uri => uri.AbsoluteUri == "http://localhost/some-other-page/")),
                 Times.Once());
@@ -244,14 +250,18 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
+            
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
@@ -275,7 +285,7 @@ namespace Peep.Tests
             CANCELLATION_TOKEN_SOURCE.Cancel();
 
             await result.WaitToReadAsync();
-            mockBrowserAdapter
+            mockPageAdapter
                 .Verify(
                     mock => mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "http://localhost/forbidden/")),
                     Times.Never());
@@ -299,14 +309,18 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
+
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
@@ -331,7 +345,7 @@ namespace Peep.Tests
 
             await result.WaitToReadAsync();
 
-            mockBrowserAdapter
+            mockPageAdapter
                 .Verify(
                     mock => mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "http://localhost/forbidden/")),
                     Times.Once());
@@ -362,14 +376,18 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
+            
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(false);
@@ -388,7 +406,7 @@ namespace Peep.Tests
             CANCELLATION_TOKEN_SOURCE.Cancel();
 
             await result.WaitToReadAsync();
-            mockBrowserAdapter
+            mockPageAdapter
                 .Verify(mock =>
                     mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "https://test.com/")),
                     Times.Never());
@@ -420,14 +438,18 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
+            
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(false);
@@ -447,7 +469,7 @@ namespace Peep.Tests
 
             await result.WaitToReadAsync();
 
-            mockBrowserAdapter.Verify(
+            mockPageAdapter.Verify(
                 mock => mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "http://localhost/different-area/")),
                 Times.Once());
         }
@@ -478,14 +500,18 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
+            
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(false);
@@ -505,7 +531,7 @@ namespace Peep.Tests
 
             await result.WaitToReadAsync();
 
-            mockBrowserAdapter.Verify(
+            mockPageAdapter.Verify(
                 mock => mock.NavigateToAsync(It.Is<Uri>(uri => uri.AbsoluteUri == "https://test.com/")),
                 Times.Never());
         }
@@ -543,12 +569,16 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
+            
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
 
             var crawlerOptions = new CrawlerOptions
@@ -566,7 +596,7 @@ namespace Peep.Tests
             CANCELLATION_TOKEN_SOURCE.Cancel();
 
             await result.WaitToReadAsync();
-            mockPageActionPerformer.Verify(mock => mock.Perform(mockPageAction.Object, mockBrowserAdapter.Object), Times.Once());
+            mockPageActionPerformer.Verify(mock => mock.Perform(mockPageAction.Object, mockPageAdapter.Object), Times.Once());
         }
 
         [TestMethod]
@@ -594,13 +624,17 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
+            
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
 
             var crawlerOptions = new CrawlerOptions
             {
@@ -618,7 +652,7 @@ namespace Peep.Tests
 
             await result.WaitToReadAsync();
             mockPageActionPerformer
-                .Verify(mock => mock.Perform(mockPageAction.Object, mockBrowserAdapter.Object), Times.Never());
+                .Verify(mock => mock.Perform(mockPageAction.Object, mockPageAdapter.Object), Times.Never());
         }
 
         [TestMethod]
@@ -639,15 +673,19 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
             var mockQueue = new Mock<ICrawlQueue>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
+            
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(false);
@@ -722,14 +760,18 @@ namespace Peep.Tests
 
             var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
+            var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
             mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
                 .ReturnsAsync(mockBrowserAdapter.Object);
 
-            mockBrowserAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
+                .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
+
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockBrowserAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
                 .ReturnsAsync(false);

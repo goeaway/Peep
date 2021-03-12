@@ -1,18 +1,35 @@
-﻿using PuppeteerSharp;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using PuppeteerSharp;
 
 namespace Peep.BrowserAdapter
 {
     public class PuppeteerSharpBrowserAdapter : IBrowserAdapter
     {
         private readonly Browser _browser;
-        private readonly Page _page;
+        private readonly List<IPageAdapter> _pageAdapters;
 
-        public PuppeteerSharpBrowserAdapter()
+        private const int MAX_ALLOWED_PAGE_COUNT = 10;
+        
+        public PuppeteerSharpBrowserAdapter(int pageCount) : this(pageCount, false) {}
+        
+        public PuppeteerSharpBrowserAdapter(int pageCount, bool debug)
         {
+            if (pageCount < 1)
+            {
+                throw new ArgumentOutOfRangeException("At least one page is required");
+            }
+
+            if (pageCount > MAX_ALLOWED_PAGE_COUNT)
+            {
+                throw new ArgumentOutOfRangeException($"A maximum of {MAX_ALLOWED_PAGE_COUNT} page(s) is allowed");
+            }
+            
             // we can't just use the downloadable browser on linux (in docker)
             // if the OS is linux, puppeteer sharp will pick up the browser location
             // set in the environment variable PUPPETEER_EXECUTABLE_PATH 
@@ -24,11 +41,11 @@ namespace Peep.BrowserAdapter
                     .GetAwaiter()
                     .GetResult();
             }
-
+            
             _browser = Puppeteer
                 .LaunchAsync(new LaunchOptions
                 {
-                    Headless = true,
+                    Headless = !debug,
                     Args = new[]
                     {
                         "--no-sandbox"
@@ -38,49 +55,30 @@ namespace Peep.BrowserAdapter
                 .GetAwaiter()
                 .GetResult();
 
-            _page = _browser
-                .PagesAsync()
-                .ConfigureAwait(false)
-                .GetAwaiter()
-                .GetResult()
-                .First();
+            _pageAdapters = new List<IPageAdapter>();
+
+            for (var i = 0; i < pageCount; i++)
+            {
+                // puppeteersharp will automatically create a page, so use that instead of creating an extra one
+                var page = i == 0
+                    ? _browser.PagesAsync().ConfigureAwait(false).GetAwaiter().GetResult().First()
+                    : _browser.NewPageAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+
+                _pageAdapters.Add(new PuppeteerSharpPageAdapter(page));
+            }
         }
 
-        public void Dispose() => _browser.Dispose();
-        public Task<string> GetContentAsync() => _page.GetContentAsync();
+        public void Dispose()
+        {
+            // foreach (var adapter in _pageAdapters)
+            // {
+            //     adapter.Dispose();
+            // }
+            
+            _browser.Dispose();
+        }
+
         public Task<string> GetUserAgentAsync() => _browser.GetUserAgentAsync();
-        public async Task<bool> NavigateToAsync(Uri uri)
-        {
-            if(uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            var response = await _page.GoToAsync(uri.AbsoluteUri, WaitUntilNavigation.DOMContentLoaded);
-            return response.Ok;
-        }
-
-        public async Task WaitForSelector(string selector, TimeSpan timeout)
-        {
-            await _page.WaitForSelectorAsync(selector, new WaitForSelectorOptions 
-            { 
-                Timeout = (int)timeout.TotalMilliseconds 
-            });
-        }
-
-        public async Task Click(string selector)
-        {
-            if(selector == null)
-            {
-                throw new ArgumentNullException(nameof(selector));
-            }
-
-            await _page.ClickAsync(selector);
-        }
-
-        public async Task ScrollY(int scrollAmount)
-        {
-            await _page.EvaluateExpressionAsync($"window.scrollBy(0, {scrollAmount})");
-        }
+        public IEnumerable<IPageAdapter> GetPageAdapters() => _pageAdapters;
     }
 }
