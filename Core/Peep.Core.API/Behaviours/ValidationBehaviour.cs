@@ -51,7 +51,7 @@ namespace Peep.Core.API.Behaviours
                     // the error response dto as sole parameter
                     return Activator.CreateInstance(
                         responseType,
-                        new ErrorResponseDTO
+                        new HttpErrorResponse
                         {
                             Errors = failures.Select(s => s.ErrorMessage),
                             Message = "Validation error"

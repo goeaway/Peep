@@ -1,0 +1,14 @@
+version: "3"
+
+networks:
+  app_bridge:
+    driver: bridge
+    
+services:
+  crawler:
+    image: siouija/peep-crawler
+    container_name: peepc_container
+    volumes:
+      - ./appsettings.json:/app/appsettings.json
+    networks:
+      - app_bridge

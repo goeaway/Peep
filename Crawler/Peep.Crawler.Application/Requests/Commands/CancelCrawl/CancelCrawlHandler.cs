@@ -8,7 +8,7 @@ using Peep.Crawler.Application.Services;
 
 namespace Peep.Crawler.Application.Requests.Commands.CancelCrawl
 {
-    public class CancelCrawlHandler : IRequestHandler<CancelCrawlRequest, Either<Unit, ErrorResponseDTO>>
+    public class CancelCrawlHandler : IRequestHandler<CancelCrawlRequest, Either<Unit, HttpErrorResponse>>
     {
         private readonly IJobQueue _jobQueue;
         private readonly ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
@@ -21,16 +21,16 @@ namespace Peep.Crawler.Application.Requests.Commands.CancelCrawl
             _crawlCancellationTokenProvider = crawlCancellationTokenProvider;
         }
 
-        public Task<Either<Unit, ErrorResponseDTO>> Handle(CancelCrawlRequest request, CancellationToken cancellationToken)
+        public Task<Either<Unit, HttpErrorResponse>> Handle(CancelCrawlRequest request, CancellationToken cancellationToken)
         {
             if (_jobQueue.TryRemove(request.CrawlId))
             {
-                return Task.FromResult(new Either<Unit, ErrorResponseDTO>(Unit.Value));
+                return Task.FromResult(new Either<Unit, HttpErrorResponse>(Unit.Value));
             }
 
             _crawlCancellationTokenProvider.CancelJob(request.CrawlId);
 
-            return Task.FromResult(new Either<Unit, ErrorResponseDTO>(Unit.Value));
+            return Task.FromResult(new Either<Unit, HttpErrorResponse>(Unit.Value));
         }
     }
 }

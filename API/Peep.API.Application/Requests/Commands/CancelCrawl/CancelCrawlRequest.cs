@@ -4,7 +4,7 @@ using Peep.Core.API;
 
 namespace Peep.API.Application.Requests.Commands.CancelCrawl
 {
-    public class CancelCrawlRequest : IRequest<Either<CancelCrawlResponseDto, ErrorResponseDTO>>
+    public class CancelCrawlRequest : IRequest<Either<CancelCrawlResponseDto, HttpErrorResponse>>
     {
         public string CrawlId { get; set; }
 

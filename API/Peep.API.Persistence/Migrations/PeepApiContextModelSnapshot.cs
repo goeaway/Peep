@@ -39,6 +39,9 @@ namespace Peep.API.Persistence.Migrations
                     b.Property<string>("JobJson")
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("LastHeartbeat")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<string>("State")
                         .IsRequired()
                         .HasColumnType("text");
@@ -46,6 +49,24 @@ namespace Peep.API.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Jobs");
+                });
+
+            modelBuilder.Entity("Peep.API.Models.Entities.JobCrawler", b =>
+                {
+                    b.Property<string>("CrawlerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("JobId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastHeartbeat")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("CrawlerId");
+
+                    b.HasIndex("JobId");
+
+                    b.ToTable("JobCrawlers");
                 });
 
             modelBuilder.Entity("Peep.API.Models.Entities.JobData", b =>
@@ -95,6 +116,13 @@ namespace Peep.API.Persistence.Migrations
                     b.HasIndex("JobId");
 
                     b.ToTable("JobErrors");
+                });
+
+            modelBuilder.Entity("Peep.API.Models.Entities.JobCrawler", b =>
+                {
+                    b.HasOne("Peep.API.Models.Entities.Job", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId");
                 });
 
             modelBuilder.Entity("Peep.API.Models.Entities.JobData", b =>

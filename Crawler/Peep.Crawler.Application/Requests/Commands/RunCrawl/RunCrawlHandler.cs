@@ -15,7 +15,7 @@ using Serilog.Context;
 
 namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
 {
-    public class RunCrawlHandler : IRequestHandler<RunCrawlRequest, Either<Unit, ErrorResponseDTO>>
+    public class RunCrawlHandler : IRequestHandler<RunCrawlRequest, Either<Unit, HttpErrorResponse>>
     {
         private readonly ILogger _logger;
         private readonly ICrawlCancellationTokenProvider _crawlCancellationTokenProvider;
@@ -43,7 +43,7 @@ namespace Peep.Crawler.Application.Requests.Commands.RunCrawl
             _publishEndpoint = publishEndpoint;
         }
 
-        public async Task<Either<Unit, ErrorResponseDTO>> Handle(RunCrawlRequest request, CancellationToken cancellationToken)
+        public async Task<Either<Unit, HttpErrorResponse>> Handle(RunCrawlRequest request, CancellationToken cancellationToken)
         {
             using(LogContext.PushProperty("JobId", request.Job.Id))
             {

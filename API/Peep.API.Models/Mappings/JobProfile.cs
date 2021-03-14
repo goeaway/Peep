@@ -1,12 +1,9 @@
 ﻿using AutoMapper;
-using Newtonsoft.Json;
 using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Peep.Core.API.Providers;
 
 namespace Peep.API.Models.Mappings
@@ -29,7 +26,7 @@ namespace Peep.API.Models.Mappings
                 .ForMember(
                     dto => dto.Errors,
                     opt => 
-                        opt.MapFrom(j => j.JobErrors.Select(je => je.Message)))
+                        opt.MapFrom(j => j.JobErrors.Select(je => $"{je.Source} {je.Message}")))
                 .ForMember(
                     dto => dto.DataCount,
                     opt => 

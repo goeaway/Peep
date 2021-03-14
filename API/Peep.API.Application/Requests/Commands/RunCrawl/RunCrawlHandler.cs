@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MassTransit;
 using MediatR;
-using Peep.API.Application.Managers;
+using Microsoft.EntityFrameworkCore;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
 using Peep.API.Persistence;
@@ -27,7 +27,6 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
         private readonly ICrawlFilterManager _filterManager;
         private readonly ICrawlQueueManager _queueManager;
         private readonly IPublishEndpoint _publishEndpoint;
-        private readonly ICrawlerManager _crawlerManager;
         
         public RunCrawlHandler(
             PeepApiContext context, 
@@ -36,8 +35,7 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
             ICrawlCancellationTokenProvider crawlCancellationTokenProvider, 
             ICrawlFilterManager filterManager, 
             ICrawlQueueManager queueManager, 
-            IPublishEndpoint publishEndpoint, 
-            ICrawlerManager crawlerManager)
+            IPublishEndpoint publishEndpoint)
         {
             _context = context;
             _logger = logger;
@@ -47,7 +45,6 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
             _filterManager = filterManager;
             _queueManager = queueManager;
             _publishEndpoint = publishEndpoint;
-            _crawlerManager = crawlerManager;
         }
         
         public async Task<Unit> Handle(RunCrawlRequest request, CancellationToken cancellationToken)
@@ -103,7 +100,6 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
         {
             await _queueManager.Clear();
             await _filterManager.Clear();
-            _crawlerManager.Clear(job.Id);
 
             // queue up job seeds
             _logger.Information("Queueing seeds {Seeds}", string.Join(", ", jobData.Seeds));
@@ -131,13 +127,8 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
             CancellationTokenSource combinedCancellationTokenSource, 
             DateTime dateStarted)
         {
-            // go into loop checking for job result + cancellation
             while (!combinedCancellationTokenSource.IsCancellationRequested)
             {
-                // assess duration, crawl count from filter
-                // and total data (crawlers should provide easily accessible count of data in each 
-                // push, so we can aggregate easier without having to serialise the data here each time)
-                // check that info against stop conditions
                 var result = new CrawlResult
                 {
                     CrawlCount = await _filterManager.GetCount(),
@@ -156,6 +147,7 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
 
                 var running = await _context.Jobs.FindAsync(job.Id);
                 running.CrawlCount = result.CrawlCount;
+                running.LastHeartbeat = _nowProvider.Now;
 
                 await _context.SaveChangesAsync(combinedCancellationTokenSource.Token);
 
@@ -178,51 +170,64 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
                         CrawlId = job.Id
                     }, CancellationToken.None);
 
-            var errors = new List<JobError>();
-            
+            // wait here for jobcrawlers where job id == this job id to return no results
+            // or for timeout? Better to rely on the job crawler monitor perhaps
             try
             {
-                // wait in a loop here until all crawlers involved in job say they're done
-                // or timeout happens
-                _logger.Information("Waiting for crawlers to complete");
-                await _crawlerManager.WaitAllFinished(job.Id, TimeSpan.FromSeconds(20));
+                await WaitForJobCrawlers(job.Id, TimeSpan.FromSeconds(10));
             }
-            catch (TimeoutException e)
+            catch (TimeoutException)
             {
-                errors.Add(new JobError()
+                var timeoutError = new JobError
                 {
-                    Message =  e.Message, 
-                    StackTrace = e.StackTrace, 
-                    Source = "API"
-                });
+                    Source = "API",
+                    Message = "Timed out waiting for all crawlers to complete job"
+                };
+                
+                if (job.JobErrors == null)
+                {
+                    job.JobErrors = new List<JobError>
+                    {
+                        timeoutError
+                    };
+                }
+                else
+                {
+                    job.JobErrors.Add(timeoutError);
+                }
             }
-
+            
             _logger.Information("Saving data");
-            // update job with finishing touches
 
             job.DateCompleted = _nowProvider.Now;
             job.State = stopConditionMet ? JobState.Complete :
-                    errors.Any() ? JobState.Errored :
+                    job.JobErrors.Any() ? JobState.Errored :
                     JobState.Cancelled;
             job.CrawlCount = await _filterManager.GetCount();
 
-            if (job.JobErrors != null)
-            {
-                job.JobErrors.AddRange(errors);
-            }
-            else
-            {
-                job.JobErrors = errors;
-            }
-            
             await _context.SaveChangesAsync(stoppingToken);
 
-            // clear cache of data, queue, filter
             await _queueManager.Clear();
             await _filterManager.Clear();
-            _crawlerManager.Clear(job.Id);
 
             _crawlCancellationTokenProvider.DisposeOfToken(job.Id);
+        }
+
+        private async Task WaitForJobCrawlers(
+            string jobId, 
+            TimeSpan timeout)
+        {
+            var now = DateTime.Now;
+            
+            while (await _context
+                .JobCrawlers
+                .AnyAsync(jc => jc.Job.Id == jobId, CancellationToken.None))
+            {
+                if (DateTime.Now - now > timeout)
+                {
+                    throw new TimeoutException();
+                }                
+            }
         }
     }
 }

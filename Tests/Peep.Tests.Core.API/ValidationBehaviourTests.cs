@@ -27,12 +27,14 @@ namespace Peep.Tests.Core.API
                 new GetCrawlValidator()
             };
             
-            var behaviour = new ValidationBehaviour<GetCrawlRequest, Either<GetCrawlResponseDto, ErrorResponseDTO>>(validators, _logger);
+            var behaviour = new ValidationBehaviour<GetCrawlRequest, Either<GetCrawlResponseDto, HttpErrorResponse>>(validators, _logger);
 
             var result = await behaviour.Handle(
                 request, 
                 CancellationToken.None,
-                async () => new GetCrawlResponseDto());
+                () => Task
+                    .FromResult(
+                        new Either<GetCrawlResponseDto, HttpErrorResponse>(new GetCrawlResponseDto())));
             var error = result.ErrorOrDefault;
 
             Assert.IsNotNull(error);

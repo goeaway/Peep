@@ -1,4 +1,3 @@
-using System;
 using MediatR;
 using Peep.API.Models.DTOs;
 using Peep.API.Persistence;
@@ -11,7 +10,7 @@ using Peep.Core.API;
 
 namespace Peep.API.Application.Requests.Commands.CancelCrawl
 {
-    public class CancelCrawlHandler : IRequestHandler<CancelCrawlRequest, Either<CancelCrawlResponseDto, ErrorResponseDTO>>
+    public class CancelCrawlHandler : IRequestHandler<CancelCrawlRequest, Either<CancelCrawlResponseDto, HttpErrorResponse>>
     {
         private readonly PeepApiContext _context;
         private readonly ICrawlCancellationTokenProvider _tokenProvider;
@@ -23,14 +22,14 @@ namespace Peep.API.Application.Requests.Commands.CancelCrawl
             _tokenProvider = tokenProvider;
         }
 
-        public async Task<Either<CancelCrawlResponseDto, ErrorResponseDTO>> Handle(CancelCrawlRequest request, CancellationToken cancellationToken)
+        public async Task<Either<CancelCrawlResponseDto, HttpErrorResponse>> Handle(CancelCrawlRequest request, CancellationToken cancellationToken)
         {
             // try and find in the db, remove from there
             var foundJob = await _context.Jobs.FindAsync(request.CrawlId);
 
             if (foundJob == null)
             {
-                return new ErrorResponseDTO
+                return new HttpErrorResponse
                 {
                     Message = "Job not found",
                     StatusCode = HttpStatusCode.NotFound
@@ -49,7 +48,7 @@ namespace Peep.API.Application.Requests.Commands.CancelCrawl
                     _tokenProvider.CancelJob(request.CrawlId);
                     return new CancelCrawlResponseDto();
                 default:
-                    return new ErrorResponseDTO
+                    return new HttpErrorResponse
                     {
                         Message = "Job not in a cancellable state",
                         StatusCode = HttpStatusCode.BadRequest

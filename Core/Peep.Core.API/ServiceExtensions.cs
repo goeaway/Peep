@@ -27,5 +27,14 @@ namespace Peep.Core.API
 
             return services.AddSingleton(cachingOptions);
         }
+
+        public static IServiceCollection AddMonitoringOptions(this IServiceCollection services,
+            IConfiguration configuration,
+            out MonitoringOptions monitoringOptions)
+        {
+            monitoringOptions = new MonitoringOptions();
+            configuration.GetSection(MonitoringOptions.Key).Bind(monitoringOptions);
+            return services.AddSingleton(monitoringOptions);
+        }
     }
 }

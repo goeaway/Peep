@@ -10,7 +10,7 @@ using Peep.Core.API;
 
 namespace Peep.API.Application.Requests.Queries.GetCrawl
 {
-    public class GetCrawlHandler : IRequestHandler<GetCrawlRequest, Either<GetCrawlResponseDto, ErrorResponseDTO>>
+    public class GetCrawlHandler : IRequestHandler<GetCrawlRequest, Either<GetCrawlResponseDto, HttpErrorResponse>>
     {
         private readonly PeepApiContext _context;
         private readonly IMapper _mapper;
@@ -24,7 +24,7 @@ namespace Peep.API.Application.Requests.Queries.GetCrawl
             _mapper = mapper;
         }
 
-        public async Task<Either<GetCrawlResponseDto, ErrorResponseDTO>> Handle(GetCrawlRequest request, CancellationToken cancellationToken)
+        public async Task<Either<GetCrawlResponseDto, HttpErrorResponse>> Handle(GetCrawlRequest request, CancellationToken cancellationToken)
         {
             var foundCompleted = await _context.Jobs
                 .Include(j => j.JobData)
@@ -39,7 +39,7 @@ namespace Peep.API.Application.Requests.Queries.GetCrawl
             }
             
             // return error that it was not found
-            return new ErrorResponseDTO
+            return new HttpErrorResponse
             {
                 StatusCode = HttpStatusCode.NotFound,
                 Message = "Crawl not found"

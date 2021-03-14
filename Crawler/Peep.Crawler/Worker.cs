@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Hosting;
+using Peep.Core.API.Options;
 using Peep.Core.Infrastructure.Messages;
+using Peep.Crawler.Application.Providers;
 using Peep.Crawler.Application.Requests.Commands.RunCrawl;
 using Peep.Crawler.Application.Services;
 using Serilog;
@@ -16,55 +19,131 @@ namespace Peep.Crawler
         private readonly ILogger _logger;
         private readonly IJobQueue _jobQueue;
         private readonly IMediator _mediator;
-        private readonly IPublishEndpoint _publishEndpoint;
-        
+        private readonly ICrawlerIdProvider _crawlerIdProvider;
+        private readonly ISendEndpointProvider _sendEndpointProvider;
+        private readonly MonitoringOptions _monitoringOptions;
+
         public Worker(
             ILogger logger,
             IJobQueue jobQueue,
             IMediator mediator, 
-            IPublishEndpoint publishEndpoint)
+            ICrawlerIdProvider crawlerIdProvider,
+            ISendEndpointProvider sendEndpointProvider, 
+            MonitoringOptions monitoringOptions)
         {
             _logger = logger;
             _jobQueue = jobQueue;
             _mediator = mediator;
-            _publishEndpoint = publishEndpoint;
+            _crawlerIdProvider = crawlerIdProvider;
+            _sendEndpointProvider = sendEndpointProvider;
+            _monitoringOptions = monitoringOptions;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.Information("Waiting for jobs");
+            await SendUp(stoppingToken);
+
+            stoppingToken.Register(async () => { await SendDown(); });
+            
             while (!stoppingToken.IsCancellationRequested)
             {
                 // if crawl found, run the job
                 while (_jobQueue.TryDequeue(out var job))
                 {
-                    // send message to API that this crawler has started this job
-                    await _publishEndpoint
-                        .Publish(
-                            new CrawlerStarted
-                            {
-                                CrawlerId = Environment.MachineName, 
-                                JobId = job.Id
-                            },
-                            stoppingToken
-                        );
+                    await SendJoined(stoppingToken, job);
+
+                    var runTask = _mediator.Send(new RunCrawlRequest { Job = job }, stoppingToken);
+
+                    while (!runTask.IsCompleted)
+                    {
+                        await Task.Delay(
+                            TimeSpan.FromSeconds(_monitoringOptions.TickSeconds), 
+                            stoppingToken);
+
+                        await SendHeartbeat(stoppingToken);
+                    }
                     
-                    await _mediator.Send(new RunCrawlRequest { Job = job }, stoppingToken);
-                    
-                    // send a message saying we are done
-                    await _publishEndpoint
-                        .Publish(
-                            new CrawlerFinished
-                            {
-                                CrawlerId = Environment.MachineName, 
-                                JobId = job.Id
-                            },
-                            stoppingToken
-                        );
+                    await SendLeft(stoppingToken, job);
                 }
 
-                await Task.Delay(1000, stoppingToken);
+                await SendHeartbeat(stoppingToken);
+
+                await Task.Delay(
+                    TimeSpan.FromSeconds(_monitoringOptions.TickSeconds), 
+                    stoppingToken);
             }
+        }
+
+        private async Task SendUp(CancellationToken stoppingToken)
+        {
+            _logger.Information("Sending up message");
+            // send message saying I'm Here
+            var upEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:crawler-up"));
+            await upEndpoint
+                .Send(new CrawlerUp
+                {
+                    CrawlerId = _crawlerIdProvider.GetCrawlerId()
+                }, stoppingToken);
+        }
+
+        private async Task SendJoined(CancellationToken stoppingToken, IdentifiableCrawlJob job)
+        {
+            _logger.Information("Sending joined message");
+            // send message to API that this crawler has started this job
+            var joinedEndpoint = await _sendEndpointProvider
+                .GetSendEndpoint(new Uri("queue:crawler-joined"));
+            await joinedEndpoint
+                .Send(
+                    new CrawlerJoined
+                    {
+                        CrawlerId = _crawlerIdProvider.GetCrawlerId(),
+                        JobId = job.Id
+                    },
+                    stoppingToken
+                );
+        }
+        
+        private async Task SendHeartbeat(CancellationToken cancellationToken)
+        {
+            _logger.Information("Sending heartbeat message");
+                        
+            var heartbeatEndpoint =
+                await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:crawler-heartbeat"));
+                            
+            await heartbeatEndpoint
+                .Send(new CrawlerHeartbeat
+                {
+                    CrawlerId = _crawlerIdProvider.GetCrawlerId()
+                }, cancellationToken);
+        }
+        
+        private async Task SendLeft(CancellationToken stoppingToken, IdentifiableCrawlJob job)
+        {
+            _logger.Information("Sending left message");
+            // send a message saying we are done
+            var leftEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:crawler-left"));
+            await leftEndpoint
+                .Send(
+                    new CrawlerLeft
+                    {
+                        CrawlerId = _crawlerIdProvider.GetCrawlerId(),
+                        JobId = job.Id
+                    },
+                    stoppingToken
+                );
+        }
+        
+        private async Task SendDown()
+        {
+            _logger.Information("Sending down message");
+            var downEndpoint = await _sendEndpointProvider
+                .GetSendEndpoint(new Uri("queue:crawler-down"));
+            // send message saying I'm Not working anymore
+            await downEndpoint
+                .Send(new CrawlerDown
+                {
+                    CrawlerId = _crawlerIdProvider.GetCrawlerId()
+                }, CancellationToken.None);
         }
     }
 }
