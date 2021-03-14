@@ -33,7 +33,6 @@ services:
         SDK_VERSION: 3.1
     environment:
       DOTNET_ENVIRONMENT: Development
-    scale: 2
     depends_on:
       - rabbitmq
       - redis

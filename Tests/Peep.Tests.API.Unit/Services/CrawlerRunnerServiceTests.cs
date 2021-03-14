@@ -55,6 +55,7 @@ namespace Peep.Tests.API.Unit.Services
             var queuedJob = context.Jobs.First();
             Assert.AreEqual(JobState.Running, queuedJob.State);
             Assert.AreEqual(now, queuedJob.DateStarted);
+            Assert.AreEqual(now, queuedJob.LastHeartbeat);
         }
 
         [TestMethod]

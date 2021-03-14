@@ -242,6 +242,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             const int CRAWL_COUNT = 2;
             const string DATA_FIRST_KEY = "http://localhost/";
             const string DATA_FIRST_VALUE = "data";
+            const string ERROR_SOURCE = "source";
             const string ERROR = "something bad";
             
             var dateQueued = new DateTime(2021, 01, 01);
@@ -271,6 +272,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
                 {
                     new JobError
                     {
+                        Source = ERROR_SOURCE,
                         Message = ERROR,
                     }
                 },
@@ -297,7 +299,7 @@ namespace Peep.Tests.API.Unit.Queries.GetCrawl
             Assert.AreEqual(dateStarted, result.DateStarted);
             Assert.AreEqual(dateCompleted - dateStarted, result.Duration);
 
-            Assert.AreEqual(ERROR, result.Errors.First());
+            Assert.AreEqual(ERROR_SOURCE + " " + ERROR, result.Errors.First());
             Assert.AreEqual(JobState.Errored, result.State);
         }
 

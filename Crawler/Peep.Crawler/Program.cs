@@ -9,7 +9,9 @@ using Peep.Core.API.Behaviours;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure;
 using Peep.Core.Infrastructure.Filtering;
+using Peep.Core.Infrastructure.Messages;
 using Peep.Core.Infrastructure.Queuing;
+using Peep.Crawler.Application.Providers;
 using Peep.Crawler.Messages;
 using Peep.Filtering;
 using Peep.Queueing;
@@ -33,6 +35,7 @@ namespace Peep.Crawler
                     services.AddLogger(hostContext.Configuration);
                     services.AddCrawlerOptions(hostContext.Configuration, out var crawlOptions);
                     services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);
+                    services.AddMonitoringOptions(hostContext.Configuration, out var monitoringOptions);
                     services.AddCrawler(crawlOptions);
                     services.AddCachingOptions(hostContext.Configuration, out var cachingOptions);
                     services.AddHostedService(provider =>
@@ -42,13 +45,16 @@ namespace Peep.Crawler
                         var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
                         var jobQueue = scope.ServiceProvider.GetRequiredService<IJobQueue>();
                         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+                        var crawlerIdProvider = scope.ServiceProvider.GetRequiredService<ICrawlerIdProvider>();
+                        var sendEndpointProvider = scope.ServiceProvider.GetRequiredService<ISendEndpointProvider>();
                         
                         return new Worker(
                             logger,
                             jobQueue,
                             mediator,
-                            publishEndpoint
+                            crawlerIdProvider,
+                            sendEndpointProvider,
+                            monitoringOptions
                         );
                     });
 
@@ -59,6 +65,8 @@ namespace Peep.Crawler
 
                     services.AddTransient<ICrawlFilter, CacheCrawlFilter>();
                     services.AddTransient<ICrawlQueue, CacheCrawlQueue>();
+                    services.AddTransient<ICrawlerIdProvider, CrawlerIdProvider>(provider =>
+                        new CrawlerIdProvider(CrawlerId.FromMachineName()));
 
                     services.AddSingleton<ICrawlCancellationTokenProvider, CrawlCancellationTokenProvider>();
 
@@ -79,8 +87,12 @@ namespace Peep.Crawler
                                 h.Password(messagingOptions.Password);
                             });
 
+                            var crawlerId = ctx
+                                .GetRequiredService<ICrawlerIdProvider>()
+                                .GetCrawlerId();
+
                             cfg.ReceiveEndpoint(
-                                "crawl-queued-" + Environment.MachineName, 
+                                "crawl-queued-" + crawlerId, 
                                 e =>
                                 {
                                     e.Consumer(
@@ -89,7 +101,7 @@ namespace Peep.Crawler
                                 });
 
                             cfg.ReceiveEndpoint(
-                                "crawl-cancelled-" + Environment.MachineName,
+                                "crawl-cancelled-" + crawlerId,
                                 e =>
                                 {
                                     e.Consumer(

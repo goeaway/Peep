@@ -8,7 +8,7 @@ using Peep.Crawler.Application.Services;
 
 namespace Peep.Crawler.Application.Requests.Commands.QueueCrawl
 {
-    public class QueueCrawlHandler : IRequestHandler<QueueCrawlRequest, Either<Unit, ErrorResponseDTO>>
+    public class QueueCrawlHandler : IRequestHandler<QueueCrawlRequest, Either<Unit, HttpErrorResponse>>
     {
         private readonly IJobQueue _jobQueue;
         
@@ -17,10 +17,10 @@ namespace Peep.Crawler.Application.Requests.Commands.QueueCrawl
             _jobQueue = jobQueue;
         }
 
-        public Task<Either<Unit, ErrorResponseDTO>> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
+        public Task<Either<Unit, HttpErrorResponse>> Handle(QueueCrawlRequest request, CancellationToken cancellationToken)
         {
             _jobQueue.Enqueue(request.Job);
-            return Task.FromResult(new Either<Unit, ErrorResponseDTO>(Unit.Value));
+            return Task.FromResult(new Either<Unit, HttpErrorResponse>(Unit.Value));
         }
     }
 }

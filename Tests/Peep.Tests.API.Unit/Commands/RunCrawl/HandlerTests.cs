@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using MassTransit;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Peep.API.Application.Managers;
 using Peep.API.Application.Requests.Commands.RunCrawl;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
@@ -40,7 +39,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var publishEndpoint = new Mock<IPublishEndpoint>();
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -55,8 +53,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -94,7 +91,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var publishEndpoint = new Mock<IPublishEndpoint>();
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
 
             await using var context = Setup.CreateContext();
 
@@ -109,8 +105,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -155,7 +150,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var publishEndpoint = new Mock<IPublishEndpoint>();
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -170,8 +164,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -214,7 +207,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var publishEndpoint = new Mock<IPublishEndpoint>();
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
             
@@ -229,8 +221,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -270,7 +261,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var publishEndpoint = new Mock<IPublishEndpoint>();
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
 
@@ -285,8 +275,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -341,8 +330,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
             
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
             await using var context = Setup.CreateContext();
             
             await context.Jobs.AddAsync(job);
@@ -356,8 +343,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -397,7 +383,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var publishEndpoint = new Mock<IPublishEndpoint>();
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
             
             await using var context = Setup.CreateContext();
             
@@ -418,8 +403,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -502,8 +486,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 .ReturnsAsync(FILTER_COUNT);
             var queueManager = new Mock<ICrawlQueueManager>();
             
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
             await using var context = Setup.CreateContext();
             
             await context.Jobs.AddAsync(job);
@@ -517,8 +499,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -599,8 +580,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 .ReturnsAsync(FILTER_COUNT);
             var queueManager = new Mock<ICrawlQueueManager>();
             
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
             await using var context = Setup.CreateContext();
             
             await context.Jobs.AddAsync(job);
@@ -614,8 +593,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -667,8 +645,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
             
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
             await using var context = Setup.CreateContext();
 
             await context.AddAsync(job);
@@ -682,8 +658,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -724,8 +699,6 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
             
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
             await using var context = Setup.CreateContext();
             
             await context.Jobs.AddAsync(job);
@@ -739,8 +712,7 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -755,8 +727,9 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
         }
         
         [TestMethod]
-        public async Task Clears_CrawlerManager()
+        public async Task TimeoutException_Added_To_JobErrors_If_Any_Crawlers_Do_Not_Finish_Job()
         {
+            const string CRAWLER_ID = "crawler";
             const string JOB_ID = "id";
 
             var seeds = new List<Uri>
@@ -781,11 +754,14 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
             var filterManager = new Mock<ICrawlFilterManager>();
             var queueManager = new Mock<ICrawlQueueManager>();
             
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
             await using var context = Setup.CreateContext();
             
             await context.Jobs.AddAsync(job);
+            await context.JobCrawlers.AddAsync(new JobCrawler
+            {
+                CrawlerId = CRAWLER_ID,
+                Job = job
+            });
 
             await context.SaveChangesAsync();
                 
@@ -796,193 +772,18 @@ namespace Peep.Tests.API.Unit.Commands.RunCrawl
                 cancellationTokenProvider.Object,
                 filterManager.Object,
                 queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
+                publishEndpoint.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
 
             cancellationTokenSource.CancelAfter(500);
-            await handler.Handle(new RunCrawlRequest { JobId = JOB_ID, JobActual = jobData }, cancellationTokenSource.Token); 
-            
-            crawlerManager
-                .Verify(
-                    mock => mock.Clear(JOB_ID),
-                    Times.Exactly(2));
-        }
-        
-        [TestMethod]
-        public async Task Token_Is_Disposed_Of_After_Crawl()
-        {
-            const string JOB_ID = "id";
+            await handler.Handle(new RunCrawlRequest { JobId = JOB_ID, JobActual = jobData }, cancellationTokenSource.Token);
 
-            var seeds = new List<Uri>
-            {
-                new Uri("http://localhost")
-            };
+            var jobError = (await context.Jobs.FindAsync(JOB_ID)).JobErrors.First();
 
-            var job = new Job
-            {
-                Id = JOB_ID
-            };
-
-            var jobData = new StoppableCrawlJob
-            {
-                Seeds = seeds
-            };
-
-            var logger = new LoggerConfiguration().CreateLogger();
-            var nowProvider = new NowProvider();
-            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
-            var publishEndpoint = new Mock<IPublishEndpoint>();
-            var filterManager = new Mock<ICrawlFilterManager>();
-            var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
-            await using var context = Setup.CreateContext();
-            
-            await context.Jobs.AddAsync(job);
-
-            await context.SaveChangesAsync();
-                
-            var handler = new RunCrawlHandler(
-                context,
-                logger,
-                nowProvider,
-                cancellationTokenProvider.Object,
-                filterManager.Object,
-                queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
-            );
-
-            var cancellationTokenSource = new CancellationTokenSource();
-
-            cancellationTokenSource.CancelAfter(500);
-            await handler.Handle(new RunCrawlRequest { JobId = JOB_ID, JobActual = jobData }, cancellationTokenSource.Token); 
-            
-            cancellationTokenProvider
-                .Verify(
-                    mock => mock.DisposeOfToken(JOB_ID),
-                    Times.Once());
-        }
-        
-        [TestMethod]
-        public async Task CrawlerManager_Is_Used_To_Wait_For_Crawlers_To_Finish()
-        {
-            const string JOB_ID = "id";
-
-            var seeds = new List<Uri>
-            {
-                new Uri("http://localhost")
-            };
-
-            var job = new Job
-            {
-                Id = JOB_ID
-            };
-
-            var jobData = new StoppableCrawlJob
-            {
-                Seeds = seeds
-            };
-
-            var logger = new LoggerConfiguration().CreateLogger();
-            var nowProvider = new NowProvider();
-            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
-            var publishEndpoint = new Mock<IPublishEndpoint>();
-            var filterManager = new Mock<ICrawlFilterManager>();
-            var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
-            
-            await using var context = Setup.CreateContext();
-                
-            await context.Jobs.AddAsync(job);
-
-            await context.SaveChangesAsync();
-            
-            var handler = new RunCrawlHandler(
-                context,
-                logger,
-                nowProvider,
-                cancellationTokenProvider.Object,
-                filterManager.Object,
-                queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
-            );
-
-            var cancellationTokenSource = new CancellationTokenSource();
-
-            cancellationTokenSource.CancelAfter(500);
-            await handler.Handle(new RunCrawlRequest { JobId = JOB_ID, JobActual = jobData }, cancellationTokenSource.Token); 
-            
-            crawlerManager
-                .Verify(
-                    mock => mock.WaitAllFinished(JOB_ID, It.IsAny<TimeSpan>()),
-                    Times.Once());
-        }
-        
-        [TestMethod]
-        public async Task CrawlerManager_Adds_Timeout_Error_To_Completed_Job_If_Timeout_Occurred_While_Waiting()
-        {
-            const string JOB_ID = "id";
-            const string TIMEOUT_MESSAGE = "timeout";
-
-            var seeds = new List<Uri>
-            {
-                new Uri("http://localhost")
-            };
-
-            var job = new Job
-            {
-                Id = JOB_ID
-            };
-
-            var jobData = new StoppableCrawlJob
-            {
-                Seeds = seeds
-            };
-
-            var logger = new LoggerConfiguration().CreateLogger();
-            var nowProvider = new NowProvider();
-            var cancellationTokenProvider = new Mock<ICrawlCancellationTokenProvider>();
-            var publishEndpoint = new Mock<IPublishEndpoint>();
-            var filterManager = new Mock<ICrawlFilterManager>();
-            var queueManager = new Mock<ICrawlQueueManager>();
-            var crawlerManager = new Mock<ICrawlerManager>();
-            crawlerManager
-                .Setup(
-                    mock => mock.WaitAllFinished(JOB_ID, It.IsAny<TimeSpan>()))
-                .ThrowsAsync(new TimeoutException(TIMEOUT_MESSAGE));
-            
-            await using var context = Setup.CreateContext();
-            
-            await context.Jobs.AddAsync(job);
-
-            await context.SaveChangesAsync();
-                
-            var handler = new RunCrawlHandler(
-                context,
-                logger,
-                nowProvider,
-                cancellationTokenProvider.Object,
-                filterManager.Object,
-                queueManager.Object,
-                publishEndpoint.Object,
-                crawlerManager.Object
-            );
-
-            var cancellationTokenSource = new CancellationTokenSource();
-
-            cancellationTokenSource.CancelAfter(500);
-            await handler.Handle(new RunCrawlRequest { JobId = JOB_ID, JobActual = jobData }, cancellationTokenSource.Token); 
-            
-            // check completed job has something about timeout error
-            var completed = context.Jobs.First();
-            
-            Assert.AreEqual(TIMEOUT_MESSAGE, completed.JobErrors.First().Message);
-            Assert.AreEqual("API", completed.JobErrors.First().Source);
+            Assert.AreEqual("Timed out waiting for all crawlers to complete job", jobError.Message);
+            Assert.AreEqual("API", jobError.Source);
         }
     }
 }

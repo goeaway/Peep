@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using MassTransit;
 using MediatR;
-using Peep.API.Application.Requests.Commands.PushCrawlError;
+using Peep.API.Application.Requests.Messages.PushCrawlError;
 using Peep.Core.Infrastructure.Messages;
 
 namespace Peep.API.Messages

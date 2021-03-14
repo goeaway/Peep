@@ -1,11 +1,9 @@
-using System;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Peep.API.Persistence;
-using Serilog;
 
 namespace Peep.API
 {

@@ -8,11 +8,17 @@ using Peep.API;
 using Peep.API.Persistence;
 using Peep.Core.API.Options;
 using Peep.Core.API.Providers;
+using Serilog;
 
 namespace Peep.Tests.API.Unit
 {
     public static class Setup
     {
+        public static ILogger CreateEmptyLogger()
+        {
+            return new LoggerConfiguration().CreateLogger();
+        }
+        
         public static PeepApiContext CreateContext(string databaseName = null)
         {
             var options = new DbContextOptionsBuilder<PeepApiContext>()

@@ -18,7 +18,7 @@ namespace Peep.API.Application.Services
         private readonly IMediator _mediator;
         private readonly ILogger _logger;
         private readonly PeepApiContext _context;
-        private INowProvider _nowProvider;
+        private readonly INowProvider _nowProvider;
 
         public CrawlRunnerService(
             ILogger logger,
@@ -44,6 +44,7 @@ namespace Peep.API.Application.Services
                 // set that it is now running
                 job.State = JobState.Running;
                 job.DateStarted = _nowProvider.Now;
+                job.LastHeartbeat = _nowProvider.Now;
                 _context.SaveChanges();
                 return true;
             }
