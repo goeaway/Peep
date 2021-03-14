@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Peep.API.Persistence;
+using Serilog;
+using Serilog.Events;
 
 namespace Peep.API
 {
@@ -24,9 +26,10 @@ namespace Peep.API
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureLogging((context, logging) =>
+                .UseSerilog((host, services, cfg) =>
                 {
-                    logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+                    cfg.ReadFrom.Configuration(host.Configuration);
+                    cfg.MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

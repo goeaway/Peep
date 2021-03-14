@@ -105,8 +105,6 @@ namespace Peep.Crawler
         
         private async Task SendHeartbeat(CancellationToken cancellationToken)
         {
-            _logger.Information("Sending heartbeat message");
-                        
             var heartbeatEndpoint =
                 await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:crawler-heartbeat"));
                             

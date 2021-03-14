@@ -218,6 +218,8 @@ namespace Peep.API
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseSerilogRequestLogging();
             
             app.UseHttpsRedirection();
             app.UseExceptionHandler(ExceptionHandler);

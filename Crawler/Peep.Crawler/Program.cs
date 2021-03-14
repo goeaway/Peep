@@ -18,6 +18,7 @@ using Peep.Queueing;
 using Peep.Crawler.Application.Requests.Commands.RunCrawl;
 using Peep.Crawler.Application.Services;
 using Serilog;
+using Serilog.Events;
 
 namespace Peep.Crawler
 {
@@ -30,6 +31,10 @@ namespace Peep.Crawler
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .UseSerilog((host, services, cfg) =>
+                {
+                    cfg.ReadFrom.Configuration(host.Configuration);
+                })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddLogger(hostContext.Configuration);
