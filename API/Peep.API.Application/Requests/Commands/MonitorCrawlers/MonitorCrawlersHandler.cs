@@ -47,7 +47,6 @@ namespace Peep.API.Application.Requests.Commands.MonitorCrawlers
             _logger.Warning("Removing {Count} unresponsive crawler(s)", unresponsive.Count());
             _context.JobCrawlers.RemoveRange(unresponsive);
             await _context.SaveChangesAsync(cancellationToken);
-            
             return Unit.Value;
         }
     }

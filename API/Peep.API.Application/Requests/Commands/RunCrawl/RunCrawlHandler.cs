@@ -184,17 +184,7 @@ namespace Peep.API.Application.Requests.Commands.RunCrawl
                     Message = "Timed out waiting for all crawlers to complete job"
                 };
                 
-                if (job.JobErrors == null)
-                {
-                    job.JobErrors = new List<JobError>
-                    {
-                        timeoutError
-                    };
-                }
-                else
-                {
-                    job.JobErrors.Add(timeoutError);
-                }
+                job.JobErrors.Add(timeoutError);
             }
             
             _logger.Information("Saving data");

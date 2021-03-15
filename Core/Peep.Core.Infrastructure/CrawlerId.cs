@@ -29,5 +29,6 @@ namespace Peep.Core.Infrastructure
         public static bool operator !=(CrawlerId a, CrawlerId b) => !(a == b);
         public static implicit operator CrawlerId(string value) => new CrawlerId(value);
         public static CrawlerId FromMachineName() => new CrawlerId(Environment.MachineName);
+        public static CrawlerId FromGuid() => new CrawlerId(Guid.NewGuid().ToString());
     }
 }

@@ -66,11 +66,11 @@ namespace Peep.Crawler
                     await SendLeft(stoppingToken, job);
                 }
 
-                await SendHeartbeat(stoppingToken);
-
                 await Task.Delay(
                     TimeSpan.FromSeconds(_monitoringOptions.TickSeconds), 
                     stoppingToken);
+                
+                await SendHeartbeat(stoppingToken);
             }
         }
 

@@ -34,10 +34,19 @@ namespace Peep.Crawler
                 .UseSerilog((host, services, cfg) =>
                 {
                     cfg.ReadFrom.Configuration(host.Configuration);
+                    cfg.Enrich.WithProperty(
+                        "Context", 
+                        services
+                            .GetRequiredService<ICrawlerIdProvider>()
+                            .GetCrawlerId());
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddLogger(hostContext.Configuration);
+                    var crawlerId = CrawlerId.FromGuid();
+                    services.AddTransient<ICrawlerIdProvider, CrawlerIdProvider>(provider =>
+                        new CrawlerIdProvider(crawlerId));
+                    
+                    services.AddLogger(hostContext.Configuration, crawlerId);
                     services.AddCrawlerOptions(hostContext.Configuration, out var crawlOptions);
                     services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);
                     services.AddMonitoringOptions(hostContext.Configuration, out var monitoringOptions);
@@ -70,8 +79,7 @@ namespace Peep.Crawler
 
                     services.AddTransient<ICrawlFilter, CacheCrawlFilter>();
                     services.AddTransient<ICrawlQueue, CacheCrawlQueue>();
-                    services.AddTransient<ICrawlerIdProvider, CrawlerIdProvider>(provider =>
-                        new CrawlerIdProvider(CrawlerId.FromMachineName()));
+                    
 
                     services.AddSingleton<ICrawlCancellationTokenProvider, CrawlCancellationTokenProvider>();
 
