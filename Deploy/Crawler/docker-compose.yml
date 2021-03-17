@@ -9,6 +9,6 @@ services:
     image: siouija/peep-crawler
     container_name: peepc_container
     volumes:
-      - ./appsettings.json:/app/appsettings.json
+      - ./appsettings.Production.json:/app/appsettings.Production.json
     networks:
       - app_bridge
