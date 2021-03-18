@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="3.1.0" />
+    <PackageReference Include="PlaywrightSharp" Version="0.192.0" />
     <PackageReference Include="Polly" Version="7.2.1" />
     <PackageReference Include="PuppeteerSharp" Version="2.0.4" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.1.3" />

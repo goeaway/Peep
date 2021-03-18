@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Peep.BrowserAdapter;
 using Serilog;
@@ -24,7 +25,20 @@ namespace Peep.Crawler
 
         public static IServiceCollection AddBrowserAdapter(this IServiceCollection services, CrawlConfigOptions options)
         {
-            return services.AddSingleton<IBrowserAdapter>(new PuppeteerSharpBrowserAdapter(options.BrowserPagesCount));
+            return services.AddSingleton<IBrowserAdapter, PlaywrightSharpBrowserAdapter>(
+                provider =>
+                {
+                    try
+                    {
+                        return new PlaywrightSharpBrowserAdapter(options.BrowserPagesCount);
+                    }
+                    catch (Exception e)
+                    {
+                        provider.GetRequiredService<ILogger>()
+                            .Fatal(e, "Error occurred trying to create browser adapter");
+                        throw;
+                    }
+                });
         }
 
         public static IServiceCollection AddCrawler(this IServiceCollection services)

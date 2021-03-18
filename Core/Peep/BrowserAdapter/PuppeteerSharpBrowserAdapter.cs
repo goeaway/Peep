@@ -22,7 +22,7 @@ namespace Peep.BrowserAdapter
         {
             if (pageCount < 1)
             {
-                throw new ArgumentOutOfRangeException("At least one page is required");
+                throw new ArgumentOutOfRangeException(nameof(pageCount), "At least one page is required");
             }
 
             if (pageCount > MAX_ALLOWED_PAGE_COUNT)
