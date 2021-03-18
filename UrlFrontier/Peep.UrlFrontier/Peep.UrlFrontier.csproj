@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentValidation.AspNetCore" Version="9.5.3" />
+        <PackageReference Include="MediatR" Version="9.0.0" />
+        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="9.0.0" />
+        <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Peep.Core.API\Peep.Core.API.csproj" />
+      <ProjectReference Include="..\..\Core\Peep.Core.Infrastructure\Peep.Core.Infrastructure.csproj" />
+      <ProjectReference Include="..\Peep.UrlFrontier.Application\Peep.UrlFrontier.Application.csproj" />
+    </ItemGroup>
+
+</Project>
