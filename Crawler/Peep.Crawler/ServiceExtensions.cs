@@ -1,13 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Peep.BrowserAdapter;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using NpgsqlTypes;
 using Peep.Core.Infrastructure;
 using Peep.Crawler.Application.Options;
-using Peep.Factories;
-using Serilog.Sinks.PostgreSQL;
 
 namespace Peep.Crawler
 {
@@ -26,15 +22,17 @@ namespace Peep.Crawler
             return services;
         }
 
-        public static IServiceCollection AddCrawler(this IServiceCollection services, CrawlConfigOptions options)
+        public static IServiceCollection AddBrowserAdapter(this IServiceCollection services, CrawlConfigOptions options)
+        {
+            return services.AddSingleton<IBrowserAdapter>(new PuppeteerSharpBrowserAdapter(options.BrowserPagesCount));
+        }
+
+        public static IServiceCollection AddCrawler(this IServiceCollection services)
         {
             services.AddTransient<ICrawler, DistributedCrawler>(provider =>
             {
-                var crawlerOptions = new CrawlerOptions
-                {
-                    BrowserAdapterFactory = new PuppeteerSharpBrowserAdapterFactory(options.BrowserPagesCount)
-                };
-                return new DistributedCrawler(crawlerOptions);
+                var browserAdapter = provider.GetRequiredService<IBrowserAdapter>();
+                return new DistributedCrawler(browserAdapter);
             });
             return services;
         }

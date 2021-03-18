@@ -2,7 +2,6 @@
 using Moq;
 using Peep.BrowserAdapter;
 using Peep.Exceptions;
-using Peep.Factories;
 using Peep.PageActions;
 using Peep.StopConditions;
 using System;
@@ -21,19 +20,16 @@ namespace Peep.Tests
     public class CrawlerTests
     {
         [TestMethod]
-        public void Throws_If_CrawlerOptions_Null()
+        public void Throws_If_BrowserAdapter_Null()
         {
             Assert.ThrowsException<ArgumentNullException>(() => new DistributedCrawler(null));
         }
-
+        
         [TestMethod]
-        public void Throws_If_CrawlerOptions_BrowserAdapterFactory_Null()
+        public void Throws_If_CrawlerOptions_Null()
         {
-            var options = new CrawlerOptions
-            {
-                BrowserAdapterFactory = null
-            };
-            Assert.ThrowsException<CrawlerOptionsException>(() => new DistributedCrawler(options));
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            Assert.ThrowsException<ArgumentNullException>(() => new DistributedCrawler(browserAdapter.Object, null));
         }
 
         [TestMethod]
@@ -43,7 +39,8 @@ namespace Peep.Tests
             {
                 DataExtractor = null
             };
-            Assert.ThrowsException<CrawlerOptionsException>(() => new DistributedCrawler(options));
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            Assert.ThrowsException<CrawlerOptionsException>(() => new DistributedCrawler(browserAdapter.Object, options));
         }
 
         [TestMethod]
@@ -53,13 +50,15 @@ namespace Peep.Tests
             {
                 RobotParser = null
             };
-            Assert.ThrowsException<CrawlerOptionsException>(() => new DistributedCrawler(options));
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            Assert.ThrowsException<CrawlerOptionsException>(() => new DistributedCrawler(browserAdapter.Object, options));
         }
 
         [TestMethod]
         public void Crawl_Throws_If_Options_Null()
         {
-            var crawler = new DistributedCrawler();
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            var crawler = new DistributedCrawler(browserAdapter.Object);
             Assert.ThrowsException<ArgumentNullException>(
                 () => crawler.Crawl(null, 1, new BloomFilter(100), new CrawlQueue(), default));
         }
@@ -67,29 +66,31 @@ namespace Peep.Tests
         [TestMethod]
         public void Crawl_Throws_If_Seeds_Null()
         {
-            var crawler = new DistributedCrawler();
-            var JOB = new StoppableCrawlJob();
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            var crawler = new DistributedCrawler(browserAdapter.Object);
+            var job = new StoppableCrawlJob();
             Assert.ThrowsException<InvalidOperationException>(
-                () => crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(), default));
+                () => crawler.Crawl(job, 1, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
         public void Crawl_Throws_If_Seeds_Empty()
         {
-            var JOB = new StoppableCrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>()
             };
 
-            var crawler = new DistributedCrawler();
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            var crawler = new DistributedCrawler(browserAdapter.Object);
             Assert.ThrowsException<InvalidOperationException>(
-                () => crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(), default));
+                () => crawler.Crawl(job, 1, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
         public void Crawl_Throws_If_Filter_Null()
         {
-            var JOB = new StoppableCrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
@@ -97,15 +98,16 @@ namespace Peep.Tests
                 }
             };
 
-            var crawler = new DistributedCrawler();
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            var crawler = new DistributedCrawler(browserAdapter.Object);
             Assert.ThrowsException<ArgumentNullException>(
-                () => crawler.Crawl(JOB, 1, null, new CrawlQueue(), default));
+                () => crawler.Crawl(job, 1, null, new CrawlQueue(), default));
         }
 
         [TestMethod]
         public void Crawl_Throws_If_Queue_Null()
         {
-            var JOB = new StoppableCrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
@@ -113,15 +115,16 @@ namespace Peep.Tests
                 }
             };
 
-            var crawler = new DistributedCrawler();
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            var crawler = new DistributedCrawler(browserAdapter.Object);
             Assert.ThrowsException<ArgumentNullException>(
-                () => crawler.Crawl(JOB, 1, new BloomFilter(100), null, default));
+                () => crawler.Crawl(job, 1, new BloomFilter(100), null, default));
         }
 
         [TestMethod]
         public void Crawl_Throws_If_DataCountUpdate_LessThanOne()
         {
-            var JOB = new StoppableCrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
@@ -129,15 +132,16 @@ namespace Peep.Tests
                 }
             };
 
-            var crawler = new DistributedCrawler();
+            var browserAdapter = new Mock<IBrowserAdapter>();
+            var crawler = new DistributedCrawler(browserAdapter.Object);
             Assert.ThrowsException<InvalidOperationException>(
-                () => crawler.Crawl(JOB, 0, new BloomFilter(100), new CrawlQueue(), default));
+                () => crawler.Crawl(job, 0, new BloomFilter(100), new CrawlQueue(), default));
         }
 
         [TestMethod]
         public void Stops_If_CancellationToken_Triggered()
         {
-            var JOB = new StoppableCrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
@@ -145,27 +149,18 @@ namespace Peep.Tests
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
-
-            var options = new CrawlerOptions
-            {
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
-            };
-
-            var crawler = new DistributedCrawler(options);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object);
 
             var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
-            var result = crawler.Crawl(JOB, 
+            crawler.Crawl(job, 
                 1, 
                 new BloomFilter(100),
-                new CrawlQueue(JOB.Seeds),
+                new CrawlQueue(job.Seeds),
                 cancellationTokenSource.Token);
 
             mockPageAdapter.Verify(
@@ -176,26 +171,22 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Does_Not_Crawl_The_Same_Page_Twice()
         {
-            var URI = new Uri("http://localhost/");
+            var uri = new Uri("http://localhost/");
             const string EXTRACTED_DATA = "<a href='/'></a><a href='/some-other-page'></a>";
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-            var JOB = new StoppableCrawlJob
+            var cancellationTokenSource = new CancellationTokenSource();
+            var job = new StoppableCrawlJob
             {
                 IgnoreRobots = false,
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
-
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
 
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
@@ -210,20 +201,19 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
             var result = crawler.Crawl(
-                JOB,
+                job,
                 1,
                 new BloomFilter(100),
-                new CrawlQueue(JOB.Seeds),
-                CANCELLATION_TOKEN_SOURCE.Token);
+                new CrawlQueue(job.Seeds),
+                cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
 
@@ -238,29 +228,25 @@ namespace Peep.Tests
         {
             const string EXTRACTED_DATA = "<a href='/forbidden'></a>";
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-            var URI = new Uri("http://localhost");
-            var JOB = new StoppableCrawlJob
+            var cancellationTokenSource = new CancellationTokenSource();
+            var uri = new Uri("http://localhost");
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
-            
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(uri)).ReturnsAsync(true);
             mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
@@ -269,20 +255,19 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
             var result = crawler.Crawl(
-                JOB, 
+                job, 
                 1,
                 new BloomFilter(100),
-                new CrawlQueue(JOB.Seeds),
-                CANCELLATION_TOKEN_SOURCE.Token);
+                new CrawlQueue(job.Seeds),
+                cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
             mockPageAdapter
@@ -296,24 +281,20 @@ namespace Peep.Tests
         {
             const string EXTRACTED_DATA = "<a href='/forbidden'></a>";
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-            var URI = new Uri("http://localhost");
-            var JOB = new StoppableCrawlJob
+            var cancellationTokenSource = new CancellationTokenSource();
+            var uri = new Uri("http://localhost");
+            var job = new StoppableCrawlJob
             {
                 IgnoreRobots = true,
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
-
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
 
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
@@ -328,20 +309,19 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
             var result = crawler.Crawl(
-                JOB, 
+                job, 
                 1, 
                 new BloomFilter(100), 
-                new CrawlQueue(JOB.Seeds), 
-                CANCELLATION_TOKEN_SOURCE.Token);
+                new CrawlQueue(job.Seeds), 
+                cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
 
@@ -354,15 +334,15 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Does_Not_Crawl_Page_That_Does_Not_Match_Source()
         {
-            var URI = new Uri("http://localhost/");
+            var uri = new Uri("http://localhost/");
             const string EXTRACTED_DATA = "<a href='//test.com/'></a><a href='/valid'></a>";
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-            var JOB = new StoppableCrawlJob
+            var cancellationTokenSource = new CancellationTokenSource();
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 },
                 StopConditions = new List<SerialisableStopCondition>
                 {
@@ -374,14 +354,10 @@ namespace Peep.Tests
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
-            
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
@@ -394,16 +370,15 @@ namespace Peep.Tests
 
             var crawlerOptions = new CrawlerOptions
             {
-                RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                RobotParser = mockRobotParser.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
-            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(job, 1, new BloomFilter(100), new CrawlQueue(job.Seeds), cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
             mockPageAdapter
@@ -415,16 +390,16 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Does_Crawl_Page_If_URI_Matches_UriRegex_On_Same_Domain()
         {
-            var URI = new Uri("http://localhost/an-area");
+            var uri = new Uri("http://localhost/an-area");
             const string EXTRACTED_DATA = "<a href='/different-area'></a>";
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-            var JOB = new StoppableCrawlJob
+            var cancellationTokenSource = new CancellationTokenSource();
+            var job = new StoppableCrawlJob
             {
                 UriRegex = "/different-area.*?",
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 },
                 StopConditions = new List<SerialisableStopCondition>
                 {
@@ -436,13 +411,9 @@ namespace Peep.Tests
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
-
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
 
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
@@ -456,16 +427,15 @@ namespace Peep.Tests
 
             var crawlerOptions = new CrawlerOptions
             {
-                RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                RobotParser = mockRobotParser.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
-            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(job, 1, new BloomFilter(100), new CrawlQueue(job.Seeds), cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
 
@@ -477,16 +447,16 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Does_Not_Crawl_Page_If_URI_Matches_UriRegex_On_Different_Domain()
         {
-            var URI = new Uri("http://localhost/");
+            var uri = new Uri("http://localhost/");
             const string EXTRACTED_DATA = "<a href='//test.com'></a>";
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-            var JOB = new StoppableCrawlJob
+            var cancellationTokenSource = new CancellationTokenSource();
+            var job = new StoppableCrawlJob
             {
                 UriRegex = "//test.com*?",
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 },
                 StopConditions = new List<SerialisableStopCondition>
                 {
@@ -498,19 +468,15 @@ namespace Peep.Tests
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
-            
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(uri)).ReturnsAsync(true);
             mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
 
             mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
@@ -519,15 +485,14 @@ namespace Peep.Tests
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
-            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(job, 1, new BloomFilter(100), new CrawlQueue(job.Seeds), cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
 
@@ -539,19 +504,19 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Crawl_Performs_Page_Actions_Before_Getting_Content()
         {
-            var URI = new Uri("http://localhost/");
+            var uri = new Uri("http://localhost/");
             const string USER_AGENT = "user-agent";
 
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
+            var cancellationTokenSource = new CancellationTokenSource();
 
             var mockPageAction = new Mock<IPageAction>();
             var mockPageActionPerformer = new Mock<IPageActionPerformer>();
 
-            var JOB = new StoppableCrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 },
                 PageActions = new List<IPageAction>
                 {
@@ -567,33 +532,28 @@ namespace Peep.Tests
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
-            
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
-            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(uri)).ReturnsAsync(true);
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
 
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
                 PageActionPerformer = mockPageActionPerformer.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
-            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(job, 1, new BloomFilter(100), new CrawlQueue(job.Seeds), cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
             mockPageActionPerformer.Verify(mock => mock.Perform(mockPageAction.Object, mockPageAdapter.Object), Times.Once());
@@ -602,19 +562,19 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Crawl_Only_Performs_Page_Action_If_Page_URL_Matches_Uri_Regex()
         {
-            var URI = new Uri("http://localhost/");
+            var uri = new Uri("http://localhost/");
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
+            var cancellationTokenSource = new CancellationTokenSource();
 
             var mockPageAction = new Mock<IPageAction>();
             mockPageAction.Setup(mock => mock.UriRegex).Returns("anything");
             var mockPageActionPerformer = new Mock<IPageActionPerformer>();
 
-            var JOB = new StoppableCrawlJob
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 },
                 PageActions = new List<IPageAction>
                 {
@@ -622,33 +582,28 @@ namespace Peep.Tests
                 }
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
 
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
-            
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
 
             mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-            mockPageAdapter.Setup(mock => mock.NavigateToAsync(URI)).ReturnsAsync(true);
+            mockPageAdapter.Setup(mock => mock.NavigateToAsync(uri)).ReturnsAsync(true);
 
             var crawlerOptions = new CrawlerOptions
             {
                 RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object,
                 PageActionPerformer = mockPageActionPerformer.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
-            var result = crawler.Crawl(JOB, 1, new BloomFilter(100), new CrawlQueue(JOB.Seeds), CANCELLATION_TOKEN_SOURCE.Token);
+            var result = crawler.Crawl(job, 1, new BloomFilter(100), new CrawlQueue(job.Seeds), cancellationTokenSource.Token);
 
             await Task.Delay(1000);
-            CANCELLATION_TOKEN_SOURCE.Cancel();
+            cancellationTokenSource.Cancel();
 
             await result.WaitToReadAsync();
             mockPageActionPerformer
@@ -658,27 +613,23 @@ namespace Peep.Tests
         [TestMethod]
         public async Task Crawl_Should_Periodically_Write_Data_To_Channel()
         {
-            var URI = new Uri("http://localhost/");
+            var uri = new Uri("http://localhost/");
             const string EXTRACTED_DATA = "<a href='//test.com/'></a>data";
             const string USER_AGENT = "user-agent";
-            var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-            var JOB = new StoppableCrawlJob
+            var cancellationTokenSource = new CancellationTokenSource();
+            var job = new StoppableCrawlJob
             {
                 Seeds = new List<Uri>
                 {
-                    URI
+                    uri
                 },
                 DataRegex = "(?<data>data)"
             };
 
-            var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
             var mockBrowserAdapter = new Mock<IBrowserAdapter>();
             var mockPageAdapter = new Mock<IPageAdapter>();
             var mockRobotParser = new Mock<IRobotParser>();
             var mockQueue = new Mock<ICrawlQueue>();
-
-            mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-                .ReturnsAsync(mockBrowserAdapter.Object);
 
             mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
                 .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
@@ -696,26 +647,25 @@ namespace Peep.Tests
 
             var crawlerOptions = new CrawlerOptions
             {
-                RobotParser = mockRobotParser.Object,
-                BrowserAdapterFactory = mockBrowserAdapterFactory.Object
+                RobotParser = mockRobotParser.Object
             };
 
-            var crawler = new DistributedCrawler(crawlerOptions);
+            var crawler = new DistributedCrawler(mockBrowserAdapter.Object, crawlerOptions);
 
             var channelReader = crawler.Crawl(
-                JOB, 
+                job, 
                 1,
                 new BloomFilter(100),
                 mockQueue.Object,
-                CANCELLATION_TOKEN_SOURCE.Token);
+                cancellationTokenSource.Token);
 
             var dataStore = new Dictionary<Uri, IEnumerable<string>>();
 
             try
             {
-                while(await channelReader.WaitToReadAsync(CANCELLATION_TOKEN_SOURCE.Token))
+                while (await channelReader.WaitToReadAsync(cancellationTokenSource.Token))
                 {
-                    while(channelReader.TryRead(out var result))
+                    while (channelReader.TryRead(out var result))
                     {
                         if (result.Data.Count() > 0)
                         {
@@ -727,97 +677,17 @@ namespace Peep.Tests
 
                         if (dataStore.Count() > 0)
                         {
-                            CANCELLATION_TOKEN_SOURCE.Cancel();
+                            cancellationTokenSource.Cancel();
                         }
                     }
                 }
             }
             catch (Exception)
             {
-
+                // ignored
             }
-
             Assert.IsNotNull(dataStore.First().Key.AbsoluteUri);
             Assert.AreEqual("data", dataStore.First().Value.First());
         }
-
-        // TEST REMOVED UNTIL IT BEHAVES
-        // [TestMethod]
-        // public async Task Crawl_Should_Clear_Data_Between_Channel_Writes()
-        // {
-        //     var URI = new Uri("http://localhost/");
-        //     const string EXTRACTED_DATA = "<a href='//test.com/'></a>data";
-        //     const string USER_AGENT = "user-agent";
-        //     var CANCELLATION_TOKEN_SOURCE = new CancellationTokenSource();
-        //     var JOB = new StoppableCrawlJob
-        //     {
-        //         Seeds = new List<Uri>
-        //         {
-        //             URI,
-        //             new Uri($"http://localhost/{Guid.NewGuid()}")
-        //         },
-        //         DataRegex = "(?<data>data)"
-        //     };
-        //
-        //     var mockBrowserAdapterFactory = new Mock<IBrowserAdapterFactory>();
-        //     var mockBrowserAdapter = new Mock<IBrowserAdapter>();
-        //     var mockPageAdapter = new Mock<IPageAdapter>();
-        //     var mockRobotParser = new Mock<IRobotParser>();
-        //
-        //     mockBrowserAdapterFactory.Setup(mock => mock.GetBrowserAdapter())
-        //         .ReturnsAsync(mockBrowserAdapter.Object);
-        //
-        //     mockBrowserAdapter.Setup(mock => mock.GetPageAdapters())
-        //         .Returns(new List<IPageAdapter> {mockPageAdapter.Object});
-        //
-        //     mockBrowserAdapter.Setup(mock => mock.GetUserAgentAsync()).ReturnsAsync(USER_AGENT);
-        //     mockPageAdapter.Setup(mock => mock.NavigateToAsync(It.IsAny<Uri>())).ReturnsAsync(true);
-        //     mockPageAdapter.Setup(mock => mock.GetContentAsync()).ReturnsAsync(EXTRACTED_DATA);
-        //
-        //     mockRobotParser.Setup(mock => mock.UriForbidden(It.IsAny<Uri>(), It.IsAny<string>()))
-        //         .ReturnsAsync(false);
-        //
-        //     var crawlerOptions = new CrawlerOptions
-        //     {
-        //         RobotParser = mockRobotParser.Object,
-        //         BrowserAdapterFactory = mockBrowserAdapterFactory.Object
-        //     };
-        //
-        //     var crawler = new DistributedCrawler(crawlerOptions);
-        //
-        //     var channelReader = crawler.Crawl(
-        //         JOB,
-        //         1,
-        //         new BloomFilter(100),
-        //         new CrawlQueue(JOB.Seeds),
-        //         CANCELLATION_TOKEN_SOURCE.Token);
-        //
-        //     var dataStore = new List<Uri>();
-        //
-        //     try
-        //     {
-        //         while (await channelReader.WaitToReadAsync(CANCELLATION_TOKEN_SOURCE.Token))
-        //         {
-        //             while (channelReader.TryRead(out var result))
-        //             {
-        //                 foreach (var item in result.Data)
-        //                 {
-        //                     dataStore.Add(item.Key);
-        //                 }
-        //
-        //                 if (dataStore.Count() > 1)
-        //                 {
-        //                     CANCELLATION_TOKEN_SOURCE.Cancel();
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     catch (Exception)
-        //     {
-        //
-        //     }
-        //
-        //     Assert.AreEqual(1, dataStore.Where(ds => ds.AbsoluteUri == "http://localhost/").Count());
-        // }
     }
 }

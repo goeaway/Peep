@@ -50,7 +50,8 @@ namespace Peep.Crawler
                     services.AddCrawlerOptions(hostContext.Configuration, out var crawlOptions);
                     services.AddMessagingOptions(hostContext.Configuration, out var messagingOptions);
                     services.AddMonitoringOptions(hostContext.Configuration, out var monitoringOptions);
-                    services.AddCrawler(crawlOptions);
+                    services.AddBrowserAdapter(crawlOptions);
+                    services.AddCrawler();
                     services.AddCachingOptions(hostContext.Configuration, out var cachingOptions);
                     services.AddHostedService(provider =>
                     {
@@ -100,12 +101,12 @@ namespace Peep.Crawler
                                 h.Password(messagingOptions.Password);
                             });
 
-                            var crawlerId = ctx
+                            var cId = ctx
                                 .GetRequiredService<ICrawlerIdProvider>()
                                 .GetCrawlerId();
 
                             cfg.ReceiveEndpoint(
-                                "crawl-queued-" + crawlerId, 
+                                "crawl-queued-" + cId, 
                                 e =>
                                 {
                                     e.Consumer(
@@ -114,7 +115,7 @@ namespace Peep.Crawler
                                 });
 
                             cfg.ReceiveEndpoint(
-                                "crawl-cancelled-" + crawlerId,
+                                "crawl-cancelled-" + cId,
                                 e =>
                                 {
                                     e.Consumer(

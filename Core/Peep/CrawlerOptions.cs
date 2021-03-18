@@ -1,9 +1,5 @@
 ﻿using Peep.Data;
-using Peep.Factories;
 using System.Net.Http;
-using System;
-using Peep.Filtering;
-using Peep.Queueing;
 using Peep.Robots;
 using Peep.PageActions;
 using Serilog;
@@ -14,9 +10,6 @@ namespace Peep
     {
         public ILogger Logger { get; set; }
             = new LoggerConfiguration().CreateLogger();
-        public IBrowserAdapterFactory BrowserAdapterFactory { get; set; }
-            = new PuppeteerSharpBrowserAdapterFactory();
-
         public IDataExtractor DataExtractor { get; set; }
             = new DataExtractor();
         public IRobotParser RobotParser { get; set; }
