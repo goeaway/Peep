@@ -17,18 +17,15 @@ namespace Peep
 {
     public class DistributedCrawler : ICrawler
     {
+        private readonly IBrowserAdapter _browserAdapter;
         private readonly CrawlerOptions _crawlerOptions;
 
-        public DistributedCrawler() : this(new CrawlerOptions()) { }
+        public DistributedCrawler(IBrowserAdapter browserAdapter) : this(browserAdapter, new CrawlerOptions()) { }
 
-        public DistributedCrawler(CrawlerOptions options)
+        public DistributedCrawler(IBrowserAdapter browserAdapter, CrawlerOptions options)
         {
+            _browserAdapter = browserAdapter ?? throw new ArgumentNullException(nameof(browserAdapter));
             _crawlerOptions = options ?? throw new ArgumentNullException(nameof(options));
-
-            if(options.BrowserAdapterFactory == null)
-            {
-                throw new CrawlerOptionsException("Browser adapter factory required");
-            }
 
             if(options.DataExtractor == null)
             {
@@ -97,13 +94,12 @@ namespace Peep
             {
                 try
                 {
-                    using var browserAdapter = await _crawlerOptions.BrowserAdapterFactory.GetBrowserAdapter();
-                    var userAgent = await browserAdapter.GetUserAgentAsync();
+                    var userAgent = await _browserAdapter.GetUserAgentAsync();
                     
                     await InnerCrawl(
                         job,
                         data,
-                        browserAdapter,
+                        _browserAdapter,
                         userAgent,
                         filter,
                         queue,
