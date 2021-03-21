@@ -3,7 +3,7 @@ using Newtonsoft.Json.Converters;
 using Peep.API.Models.Enums;
 using System;
 using System.Collections.Generic;
-using Peep.Data;
+using Peep.Core;
 
 namespace Peep.API.Models.DTOs
 {

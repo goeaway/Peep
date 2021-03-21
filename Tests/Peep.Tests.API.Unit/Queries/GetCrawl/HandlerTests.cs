@@ -11,6 +11,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Peep.API.Models.Enums;
+using Peep.Core;
 using Peep.Core.API.Providers;
 
 namespace Peep.Tests.API.Unit.Queries.GetCrawl

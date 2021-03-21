@@ -4,13 +4,13 @@ using Peep.API.Models.DTOs;
 using Peep.API.Models.Entities;
 using Peep.API.Persistence;
 using Peep.Core.API.Providers;
-using Peep.StopConditions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Peep.Core.API;
+using Peep.Core.StopConditions;
 
 namespace Peep.API.Application.Requests.Commands.QueueCrawl
 {

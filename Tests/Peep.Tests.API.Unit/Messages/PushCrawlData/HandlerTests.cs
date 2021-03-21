@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Peep.API.Application.Requests.Messages.PushCrawlData;
 using Peep.API.Models.Entities;
-using Peep.Data;
+using Peep.Core;
 
 namespace Peep.Tests.API.Unit.Messages.PushCrawlData
 {

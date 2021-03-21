@@ -9,8 +9,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Peep.API.Application.Requests.Messages.PushCrawlData;
 using Peep.API.Messages;
+using Peep.Core;
 using Peep.Core.Infrastructure.Messages;
-using Peep.Data;
 
 namespace Peep.Tests.API.Unit.Consumers
 {

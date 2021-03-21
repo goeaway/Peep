@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peep.Crawler.Application", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peep.Tests.Crawler.Unit", "Tests\Peep.Tests.Crawler.Unit\Peep.Tests.Crawler.Unit.csproj", "{8220318D-647B-43DB-8603-55E330FFA5B7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peep.Core", "Core\Peep.Core\Peep.Core.csproj", "{1787F2ED-FB7C-4593-B30F-E08397FFAD16}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +109,10 @@ Global
 		{8220318D-647B-43DB-8603-55E330FFA5B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8220318D-647B-43DB-8603-55E330FFA5B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8220318D-647B-43DB-8603-55E330FFA5B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1787F2ED-FB7C-4593-B30F-E08397FFAD16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1787F2ED-FB7C-4593-B30F-E08397FFAD16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1787F2ED-FB7C-4593-B30F-E08397FFAD16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1787F2ED-FB7C-4593-B30F-E08397FFAD16}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -127,6 +133,7 @@ Global
 		{903C4AB7-D708-4ED2-BB61-AE42AB5A6CBF} = {BE5CF83F-F4FD-404D-AF2A-301C2FD4ED13}
 		{F904AA49-4A6C-4294-ACC7-93B5E2CCE078} = {74E47E51-4C8C-47DA-A0DA-613BC09C885C}
 		{8220318D-647B-43DB-8603-55E330FFA5B7} = {BE5CF83F-F4FD-404D-AF2A-301C2FD4ED13}
+		{1787F2ED-FB7C-4593-B30F-E08397FFAD16} = {176576F6-D260-4A51-A3B1-CB13E3BD3D14}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5987D7B7-0930-40A4-9AEC-8F1700B98701}

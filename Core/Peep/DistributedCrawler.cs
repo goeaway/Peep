@@ -1,6 +1,4 @@
 ﻿using Peep.BrowserAdapter;
-using Peep.Exceptions;
-using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,10 +6,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Peep.Data;
+using Peep.Core;
+using Peep.Core.Exceptions;
+using Peep.Core.Filtering;
+using Peep.Core.Queueing;
 using Polly;
-using Peep.Filtering;
-using Peep.Queueing;
 
 namespace Peep
 {
@@ -137,7 +136,7 @@ namespace Peep
             ChannelWriter<CrawlProgress> channelWriter)
         {
             var pageActionRetryPolicy = Policy
-                .Handle<WaitTaskTimeoutException>()
+                .Handle<TimeoutException>()
                 .WaitAndRetryAsync(
                     _crawlerOptions.PageActionRetryCount, 
                     attempt => TimeSpan.FromMilliseconds(attempt * 200));

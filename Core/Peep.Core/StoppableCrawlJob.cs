@@ -1,11 +1,9 @@
-﻿using Newtonsoft.Json;
-using Peep.PageActions;
-using Peep.StopConditions;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
+using Peep.Core.PageActions;
+using Peep.Core.StopConditions;
 
-namespace Peep
+namespace Peep.Core
 {
     public class StoppableCrawlJob : CrawlJob
     {

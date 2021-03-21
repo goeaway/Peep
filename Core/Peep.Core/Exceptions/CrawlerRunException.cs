@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Peep.Exceptions
+namespace Peep.Core.Exceptions
 {
     public class CrawlerRunException : PeepException
     {

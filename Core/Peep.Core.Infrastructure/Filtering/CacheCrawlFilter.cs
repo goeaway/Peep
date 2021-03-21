@@ -1,8 +1,8 @@
 ﻿using Peep.Core.API.Options;
-using Peep.Filtering;
 using StackExchange.Redis;
 using System.Linq;
 using System.Threading.Tasks;
+using Peep.Core.Filtering;
 
 namespace Peep.Core.Infrastructure.Filtering
 {

@@ -1,10 +1,8 @@
-﻿using Peep.BrowserAdapter;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
+using Peep.BrowserAdapter;
 
-namespace Peep.PageActions
+namespace Peep.Core.PageActions
 {
     public class PageActionPerformer : IPageActionPerformer
     {

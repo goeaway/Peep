@@ -8,6 +8,7 @@ using Peep.API.Application.Requests.Commands.QueueCrawl;
 using Peep.API.Application.Requests.Queries.GetCrawl;
 using Peep.API.Controllers;
 using Peep.API.Models.DTOs;
+using Peep.Core;
 using Peep.Core.API;
 
 namespace Peep.Tests.API.Unit.Controllers

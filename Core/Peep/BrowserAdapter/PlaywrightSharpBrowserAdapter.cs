@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using PlaywrightSharp;
 using PlaywrightSharp.Chromium;
@@ -30,16 +32,26 @@ namespace Peep.BrowserAdapter
                     $"A maximum of {MAX_ALLOWED_PAGES} page(s) is allowed");
             }
             
-            Playwright.InstallAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-
+            string browsersPath = null;
+            string driverPath = null;
+            
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                browsersPath = "/root/.cache/ms-playwright";
+                driverPath = "/app/.playwright/unix/native/playwright.sh";
+            }
+            
             _playwright = Playwright
-                .CreateAsync()
+                .CreateAsync(
+                    browsersPath: browsersPath,
+                    driverExecutablePath: driverPath
+                    )
                 .ConfigureAwait(false)
                 .GetAwaiter()
                 .GetResult();
 
             _browser = _playwright
-                .Webkit
+                .Firefox
                 .LaunchAsync(new LaunchOptions
                 {
                     Headless = true,
@@ -60,7 +72,7 @@ namespace Peep.BrowserAdapter
 
             for (var i = 0; i < pageCount; i++)
             {
-                var page = _browser.NewPageAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                var page = _context.NewPageAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                 _pageAdapters.Add(new PlaywrightSharpPageAdapter(page));
             }
         }

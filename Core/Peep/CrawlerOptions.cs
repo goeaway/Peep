@@ -1,7 +1,7 @@
 ﻿using Peep.Data;
 using System.Net.Http;
+using Peep.Core.PageActions;
 using Peep.Robots;
-using Peep.PageActions;
 using Serilog;
 
 namespace Peep
@@ -18,7 +18,5 @@ namespace Peep
             = new PageActionPerformer();
         public int PageActionRetryCount { get; set; }
             = 3;
-        public int QueueEmptyRetryCount { get; set; }
-            = 10;
     }
 }

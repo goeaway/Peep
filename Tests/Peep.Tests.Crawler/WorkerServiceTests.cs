@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Moq;
 using MassTransit;
 using MediatR;
+using Peep.Core;
 using Peep.Core.API;
 using Peep.Core.API.Options;
 using Peep.Core.Infrastructure;

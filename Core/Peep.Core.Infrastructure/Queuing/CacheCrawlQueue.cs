@@ -1,9 +1,9 @@
-﻿using Peep.Queueing;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Peep.Core.Queueing;
 using RedLockNet;
 using RedLockNet.SERedis;
 

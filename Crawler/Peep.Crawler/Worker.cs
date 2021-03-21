@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Hosting;
+using Peep.Core;
 using Peep.Core.API.Options;
 using Peep.Core.Infrastructure.Messages;
 using Peep.Crawler.Application.Providers;

@@ -1,4 +1,6 @@
-﻿namespace Peep.Crawler.Application.Services
+﻿using Peep.Core;
+
+namespace Peep.Crawler.Application.Services
 {
     public interface IJobQueue
     {

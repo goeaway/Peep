@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Peep.API.Application.Requests.Messages.CrawlerUp;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
+using Peep.Core;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure.Messages;
 

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Peep.Core;
 using Peep.Crawler.Application.Requests.Commands.QueueCrawl;
 using Peep.Crawler.Application.Services;
 

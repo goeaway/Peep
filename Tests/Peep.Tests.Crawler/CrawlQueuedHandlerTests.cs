@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using MassTransit.Testing;
 using MediatR;
 using Moq;
+using Peep.Core;
 using Peep.Core.Infrastructure.Messages;
 using Peep.Crawler;
 using Peep.Crawler.Application.Requests.Commands.QueueCrawl;

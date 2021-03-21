@@ -1,10 +1,9 @@
-﻿using Newtonsoft.Json;
-using Peep.PageActions;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using Newtonsoft.Json;
+using Peep.Core.PageActions;
 
-namespace Peep
+namespace Peep.Core
 {
     public class CrawlJob
     {

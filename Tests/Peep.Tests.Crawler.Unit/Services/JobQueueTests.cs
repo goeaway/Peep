@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Peep.Core;
 using Peep.Crawler.Application.Services;
 
 namespace Peep.Tests.Crawler.Unit.Services

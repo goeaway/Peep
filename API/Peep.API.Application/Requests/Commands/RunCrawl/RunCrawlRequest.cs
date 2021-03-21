@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Peep.Core;
 
 namespace Peep.API.Application.Requests.Commands.RunCrawl
 {

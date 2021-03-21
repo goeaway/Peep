@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Peep.PageActions
+﻿namespace Peep.Core.PageActions
 {
     public enum SerialisablePageActionType
     {

@@ -10,6 +10,7 @@ using Peep.API.Application.Requests.Commands.RunCrawl;
 using Peep.API.Application.Services;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
+using Peep.Core;
 using Peep.Core.API.Providers;
 using Serilog;
 

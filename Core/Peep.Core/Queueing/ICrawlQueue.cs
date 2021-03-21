@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Peep.Queueing
+namespace Peep.Core.Queueing
 {
     public interface ICrawlQueue
     {

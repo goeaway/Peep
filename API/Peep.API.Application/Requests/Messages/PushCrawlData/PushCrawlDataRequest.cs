@@ -1,6 +1,6 @@
 ﻿using MediatR;
+using Peep.Core;
 using Peep.Core.API;
-using Peep.Data;
 
 namespace Peep.API.Application.Requests.Messages.PushCrawlData
 {

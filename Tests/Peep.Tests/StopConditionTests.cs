@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Peep.StopConditions;
+using Peep.Core;
+using Peep.Core.StopConditions;
 
 namespace Peep.Tests
 {

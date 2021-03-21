@@ -31,6 +31,7 @@ services:
       args:
         NET_VERSION: 3.1
         SDK_VERSION: 3.1
+        #PLAYWRIGHT_SCRIPT: win-x64/native/playwright.cmd
     environment:
       DOTNET_ENVIRONMENT: Development
     depends_on:

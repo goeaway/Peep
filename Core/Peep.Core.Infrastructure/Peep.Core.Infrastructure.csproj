@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peep.Core.API\Peep.Core.API.csproj" />
-    <ProjectReference Include="..\Peep\Peep.csproj" />
+    <ProjectReference Include="..\Peep.Core\Peep.Core.csproj" />
   </ItemGroup>
 
 </Project>

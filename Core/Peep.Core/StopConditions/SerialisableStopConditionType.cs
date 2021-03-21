@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Peep.StopConditions
+﻿namespace Peep.Core.StopConditions
 {
     public enum SerialisableStopConditionType
     {

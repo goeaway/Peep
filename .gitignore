@@ -341,3 +341,5 @@ healthchecksdb
 
 # Chromium
 .local-chromium/
+# Playwright
+.playwright/

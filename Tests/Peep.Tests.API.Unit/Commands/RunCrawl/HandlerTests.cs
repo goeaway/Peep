@@ -9,11 +9,12 @@ using Moq;
 using Peep.API.Application.Requests.Commands.RunCrawl;
 using Peep.API.Models.Entities;
 using Peep.API.Models.Enums;
+using Peep.Core;
 using Peep.Core.API.Providers;
 using Peep.Core.Infrastructure.Filtering;
 using Peep.Core.Infrastructure.Messages;
 using Peep.Core.Infrastructure.Queuing;
-using Peep.StopConditions;
+using Peep.Core.StopConditions;
 using Serilog;
 
 namespace Peep.Tests.API.Unit.Commands.RunCrawl

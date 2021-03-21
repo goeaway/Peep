@@ -39,7 +39,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Peep.Core.Infrastructure\Peep.Core.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Core\Peep\Peep.csproj" />
     <ProjectReference Include="..\Peep.API.Models\Peep.API.Models.csproj" />
     <ProjectReference Include="..\Peep.API.Application\Peep.API.Application.csproj" />
   </ItemGroup>

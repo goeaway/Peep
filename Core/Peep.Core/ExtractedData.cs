@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Peep.Data
+namespace Peep.Core
 {
     public class ExtractedData : Dictionary<Uri, IEnumerable<string>>
     {

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Peep.BrowserAdapter;
-using Peep.PageActions;
+using Peep.Core.PageActions;
 
 namespace Peep.Tests
 {
