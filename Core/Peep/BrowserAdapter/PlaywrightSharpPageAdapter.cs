@@ -28,7 +28,7 @@ namespace Peep.BrowserAdapter
             }
             
             var result = await _page.GoToAsync(uri.AbsoluteUri, 
-                LifecycleEvent.DOMContentLoaded,
+                LifecycleEvent.Load,
                 timeout: (int)TimeSpan.FromMinutes(2).TotalMilliseconds);
             return result.Ok;
         }
