@@ -27,7 +27,9 @@ namespace Peep.BrowserAdapter
                 throw new ArgumentNullException(nameof(uri));
             }
             
-            var result = await _page.GoToAsync(uri.AbsoluteUri, LifecycleEvent.DOMContentLoaded);
+            var result = await _page.GoToAsync(uri.AbsoluteUri, 
+                LifecycleEvent.DOMContentLoaded,
+                timeout: (int)TimeSpan.FromMinutes(2).TotalMilliseconds);
             return result.Ok;
         }
 
@@ -38,7 +40,7 @@ namespace Peep.BrowserAdapter
                 throw new ArgumentNullException(nameof(selector));
             }
             
-            await _page.WaitForSelectorAsync(selector, null, (int)timeout.TotalMilliseconds);
+            await _page.WaitForSelectorAsync(selector, WaitForState.Visible, (int)timeout.TotalMilliseconds);
         }
 
         public async Task Click(string selector)
